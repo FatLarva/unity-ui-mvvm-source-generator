@@ -1,5 +1,4 @@
 <#@ template language="C#" linePragmas="false" #>
-<#@ template linePragmas="false" #>
 
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -18,16 +17,16 @@ using System;
 <#= NeedUniRx ? "using UniRx;" : "" #>
 <#= LocalizationKeys.Length > 0 ? "using LocalizationInterface;" : "" #>
 
-<#if (HasNamespace) {#>
+<# if (HasNamespace) { #>
 namespace <#= NamespaceName #>
 {
-<#}#>
+<# } #>
     public partial class <#= ClassName #>
     {
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
 		private readonly <#=subscribeInfo.GetReactiveCommandType()#> _<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd = new();
-<#		}#>
+<#		} #>
 <#  } #>
 <#	foreach (var localizationKey in LocalizationKeys) { #>
 		public readonly ReactiveProperty<string> <#=localizationKey.ToPascalCase()#> = new();
@@ -38,7 +37,7 @@ namespace <#= NamespaceName #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
 		public IObservable<<#=subscribeInfo.GetObservableArgumentType()#>> <#=subscribeInfo.ObservableName#> => _<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd;
-<#		}#>
+<#		} #>
 <#  } #>
 <#	foreach (var methodName in MethodsToCall) { #>
 
@@ -48,6 +47,17 @@ namespace <#= NamespaceName #>
         }
 		partial void On<#= methodName #>();
 <#  } #>
+
+<# if (HasAutoCreatedObservables) { #>
+		private void HandleAutoCreatedObservables(CompositeDisposable compositeDisposable)
+		{
+<#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
+<#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
+			_<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd.AddTo(compositeDisposable);
+<#		} #>
+<#  } #>
+		}
+<# } #>
 
 <# if (NeedLocalization) { #>
 		private void HandleLocalization(ILocalizationProvider localizationProvider, CompositeDisposable compositeDisposable)

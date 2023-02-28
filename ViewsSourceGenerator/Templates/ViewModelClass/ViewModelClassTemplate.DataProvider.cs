@@ -1,4 +1,6 @@
-﻿namespace ViewsSourceGenerator
+﻿using System.Linq;
+
+namespace ViewsSourceGenerator
 {
     public partial class ViewModelClassTemplate
     {
@@ -19,7 +21,9 @@
         public bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
         
         public bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
-
+        
+        public bool HasAutoCreatedObservables => SubscribeOnObservableInfos.Any(info => info.ShouldCreateObservableInViewModel);
+        
         public ViewModelClassTemplate(
             string className,
             string namespaceName,
