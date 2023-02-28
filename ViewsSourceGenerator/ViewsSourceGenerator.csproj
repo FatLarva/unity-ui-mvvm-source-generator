@@ -1,0 +1,95 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Nullable>disable</Nullable>
+        <LangVersion>9</LangVersion>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <Optimize>false</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" />
+      <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0-5.final" />
+      <PackageReference Include="System.CodeDom" Version="4.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Templates\ViewModelMethodCall\ViewModelMethodCallAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ViewModelMethodCallAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ViewModelGenerateAttribute\ViewModelGenerateAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ViewModelGenerateAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ViewModelGenerate\ViewModelGenerateAttributeTemplate.cs">
+        <DependentUpon>ViewModelGenerateAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ViewModelClass\ViewModelClassTemplate.cs">
+        <DependentUpon>ViewModelClassTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\LocalizeWithKey\LocalizeWithKeyAttributeTemplate.cs">
+        <DependentUpon>LocalizeWithKeyAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ViewClass\ViewClassTemplate.cs">
+        <DependentUpon>ViewClassTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\LocalizePlaceholderWithKey\LocalizePlaceholderWithKeyAttributeTemplate.cs">
+        <DependentUpon>LocalizePlaceholderWithKeyAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\SubscribeOnViewModelsObservable\SubscribeOnViewModelsObservableAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>SubscribeOnViewModelsObservableAttributeTemplate.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Templates\ViewModelGenerateAttribute\ViewModelGenerateAttributeTemplate.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ViewModelGenerateAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewModelGenerate\ViewModelGenerateAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewModelGenerateAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewModelMethodCall\ViewModelMethodCallAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewModelMethodCallAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewModelClassTemplate\ViewModelGenerateAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewModelGenerateAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewModelClass\ViewModelClassTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewModelClassTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\LocalizeWithKey\LocalizeWithKeyAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>LocalizeWithKeyAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewClass\ViewClassTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewClassTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\LocalizePlaceholderWithKey\LocalizePlaceholderWithKeyAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>LocalizePlaceholderWithKeyAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\SubscribeOnViewModelsObservable\SubscribeOnViewModelsObservableAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>SubscribeOnViewModelsObservableAttributeTemplate.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="Tools\copy_to_unity.bat" />
+    </Target>
+
+</Project>
