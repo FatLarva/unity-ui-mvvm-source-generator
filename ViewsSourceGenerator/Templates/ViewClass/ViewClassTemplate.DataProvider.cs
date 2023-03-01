@@ -15,6 +15,8 @@
         internal LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
 
         internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        
+        internal ObservableBindingInfo[] ObservableBindingInfos { get; }
 
         internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -25,7 +27,8 @@
             ButtonMethodCallInfo[] buttonMethodCallInfo,
             LocalizableFieldInfo[] localizableFieldInfos,
             LocalizableFieldInfo[] localizablePlaceholdersFieldInfos,
-            SubscribeOnObservableInfo[] subscribeOnObservableInfos)
+            SubscribeOnObservableInfo[] subscribeOnObservableInfos,
+            ObservableBindingInfo[] observableBindingInfos)
         {
             ClassName = className;
             ViewModelClassName = viewModelClassName;
@@ -34,6 +37,7 @@
             LocalizableFieldInfos = localizableFieldInfos;
             LocalizablePlaceholderFieldInfos = localizablePlaceholdersFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
+            ObservableBindingInfos = observableBindingInfos;
         }
     }
 }

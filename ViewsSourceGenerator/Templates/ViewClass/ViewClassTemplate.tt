@@ -32,6 +32,10 @@ namespace <#= NamespaceName #>
 			_compositeDisposable?.Dispose();
 			_compositeDisposable = new CompositeDisposable();
 
+<#	foreach (var observableBindingInfo in ObservableBindingInfos) { #>
+			model.<#=observableBindingInfo.ObservableName#>.Subscribe(observedValue => <#=observableBindingInfo.GenerateAssignment("observedValue")#>).AddTo(_compositeDisposable);
+<#  } #>
+
 <#	foreach (var info in ButtonMethodCallInfo) { #>
 			<#= info.ButtonFieldName #>.OnClickAsObservable().Subscribe(_ => model.<#= info.MethodToCall #>()).AddTo(_compositeDisposable);
 <# } #>

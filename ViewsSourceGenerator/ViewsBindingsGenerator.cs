@@ -12,20 +12,7 @@ namespace ViewsSourceGenerator
     {
         private const string DiagnosticId = "ViewsBindingsGenerator";
         private const string Category = "InitializationSafety";
-        private static readonly LocalizableString Title = "InitializeComponents method should be called";
-        private static readonly LocalizableString MessageFormat = "InitializeComponents method should be called";
-        private static readonly LocalizableString Description = "InitializeComponents method should be called";
         private const string HelpLinkUri = "";
-
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
-            DiagnosticId,
-            Title,
-            MessageFormat,
-            Category,
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true,
-            description: Description,
-            helpLinkUri: HelpLinkUri);
 
         private static DiagnosticDescriptor GetDiagnostic(string message)
         {
@@ -53,6 +40,8 @@ namespace ViewsSourceGenerator
             context.AddSource(LocalizeWithKeyAttributeTemplate.SourceFileName, new LocalizeWithKeyAttributeTemplate().TransformText());
             context.AddSource(LocalizePlaceholderWithKeyAttributeTemplate.SourceFileName, new LocalizePlaceholderWithKeyAttributeTemplate().TransformText());
             context.AddSource(SubscribeOnViewModelsObservableAttributeTemplate.SourceFileName, new SubscribeOnViewModelsObservableAttributeTemplate().TransformText());
+            context.AddSource(BindToObservableAttributeTemplate.SourceFileName, new BindToObservableAttributeTemplate().TransformText());
+            context.AddSource(BindingTypeEnumTemplate.SourceFileName, new BindingTypeEnumTemplate().TransformText());
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -98,9 +87,8 @@ namespace ViewsSourceGenerator
             GenerateViewModel(in context, typeSymbol, viewModelClassName, viewModelNamespaceName);
             GenerateView(in context, typeSymbol, viewModelClassName);
                 
-            /*
-            var diagnostic = Diagnostic.Create(GetDiagnostic($"Type that needed ViewModel: {attribute.NamedArguments.Length}"), null);
-            context.ReportDiagnostic(diagnostic);*/
+            /*var diagnostic1 = Diagnostic.Create(GetDiagnostic($"Type that needed ViewModel: {attribute.NamedArguments.Length}"), null);
+            context.ReportDiagnostic(diagnostic1);*/
         }
 
         private void GenerateViewModel(in GeneratorExecutionContext context, INamedTypeSymbol typeSymbol, string viewModelClassName, string viewModelNamespaceName)
@@ -131,6 +119,7 @@ namespace ViewsSourceGenerator
             var fieldsToLocalize = GetLocalizableFieldInfos(typeSymbol);
             var fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(typeSymbol);
             var methodForAutoSubscription = GetMethodsForAutoSubscription(typeSymbol);
+            var observablesBindings = GetObservablesBindingsInfos(typeSymbol);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -139,7 +128,8 @@ namespace ViewsSourceGenerator
                 methodsToCall,
                 fieldsToLocalize,
                 fieldsToLocalizePlaceholders,
-                methodForAutoSubscription);
+                methodForAutoSubscription,
+                observablesBindings);
             var classFileName = $"{viewClassName}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
@@ -237,6 +227,33 @@ namespace ViewsSourceGenerator
                     var methodArgumentType = method.Parameters.Any() ? method.Parameters[0].Type.Name : "Unit";
                     
                     return new SubscribeOnObservableInfo(methodName, observableName, shouldCreateObservableInViewModel, methodArgumentType);
+                })
+                .ToArray();
+
+            return result;
+        }
+        
+        private ObservableBindingInfo[] GetObservablesBindingsInfos(INamedTypeSymbol typeSymbol)
+        {
+            List<IFieldSymbol> fieldsWithAttribute = typeSymbol
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .Where(f => f.GetAttributes().Any(ad => ad.AttributeClass?.Name == BindToObservableAttributeTemplate.AttributeName))
+                .ToList();
+            
+            if (fieldsWithAttribute.Count == 0)
+            {
+                return Array.Empty<ObservableBindingInfo>();
+            }
+            
+            var result = fieldsWithAttribute
+                .Select(field =>
+                {
+                    var attribute = field.GetAttributes().Single(ad => ad.AttributeClass?.Name == BindToObservableAttributeTemplate.AttributeName);
+                    var observableName = attribute.ConstructorArguments[0].Value as string;
+                    var bindingType = (BindingType)attribute.ConstructorArguments[1].Value;
+                    
+                    return new ObservableBindingInfo(field.Name, observableName, bindingType);
                 })
                 .ToArray();
 
