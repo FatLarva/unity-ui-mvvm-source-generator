@@ -1,6 +1,6 @@
 ﻿namespace ViewsSourceGenerator
 {
-    public partial class LocalizeWithKeyAttributeTemplate
+    internal partial class LocalizeWithKeyAttributeTemplate
     {
         public const string AttributeName = "LocalizeWithKeyAttribute";
         public const string SourceFileName = AttributeName + "_g.cs";

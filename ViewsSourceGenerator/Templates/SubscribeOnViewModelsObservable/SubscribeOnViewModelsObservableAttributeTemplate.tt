@@ -1,5 +1,4 @@
-<#@ template language="C#" #>
-<#@ template linePragmas="false" #>
+<#@ template language="C#" linePragmas="false" visibility="internal"#>
 
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -16,15 +15,18 @@
 
 using System;
 
-[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-public class SubscribeOnViewModelsObservableAttribute : Attribute
-{
-    public string ObservableName;
-    public bool CreateInViewModel;
-
-    public SubscribeOnViewModelsObservableAttribute(string observableName, bool createInViewModel = false)
+//namespace ViewModelGeneration
+//{
+    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+    public class SubscribeOnViewModelsObservableAttribute : Attribute
     {
-        ObservableName = observableName;
-        CreateInViewModel = createInViewModel;
+        public string ObservableName;
+        public bool CreateInViewModel;
+
+        public SubscribeOnViewModelsObservableAttribute(string observableName, bool createInViewModel = false)
+        {
+            ObservableName = observableName;
+            CreateInViewModel = createInViewModel;
+        }
     }
-}
+//}

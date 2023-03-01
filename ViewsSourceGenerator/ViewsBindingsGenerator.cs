@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace ViewsSourceGenerator
 {
     [Generator]
-    public class ViewsBindingsGenerator : ISourceGenerator
+    internal class ViewsBindingsGenerator : ISourceGenerator
     {
         private const string DiagnosticId = "ViewsBindingsGenerator";
         private const string Category = "InitializationSafety";

@@ -1,5 +1,4 @@
-<#@ template language="C#" linePragmas="false" #>
-<#@ template linePragmas="false" #>
+<#@ template language="C#" linePragmas="false" visibility="internal"#>
 
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -14,16 +13,18 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
-
 using System;
 
-[AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-public class LocalizePlaceholderWithKeyAttribute : Attribute
-{
-    public string LocalizationKey { get; }
-
-    public LocalizePlaceholderWithKeyAttribute(string localizationKey)
+//namespace ViewModelGeneration
+//{
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public class LocalizePlaceholderWithKeyAttribute : Attribute
     {
-        LocalizationKey = localizationKey;
+        public string LocalizationKey { get; }
+
+        public LocalizePlaceholderWithKeyAttribute(string localizationKey)
+        {
+            LocalizationKey = localizationKey;
+        }
     }
-}
+//}

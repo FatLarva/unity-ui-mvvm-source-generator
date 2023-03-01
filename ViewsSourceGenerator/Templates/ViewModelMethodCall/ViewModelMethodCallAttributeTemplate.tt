@@ -1,5 +1,4 @@
-<#@ template language="C#" #>
-<#@ template linePragmas="false" #>
+<#@ template language="C#" linePragmas="false" visibility="internal"#>
 
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -16,13 +15,16 @@
 
 using System;
 
-[AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-public class ViewModelMethodCallAttribute : Attribute
-{
-    public string MethodName;
-
-    public ViewModelMethodCallAttribute(string methodName)
+//namespace ViewModelGeneration
+//{
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public class ViewModelMethodCallAttribute : Attribute
     {
-        MethodName = methodName;
+        public string MethodName;
+
+        public ViewModelMethodCallAttribute(string methodName)
+        {
+            MethodName = methodName;
+        }
     }
-}
+//}

@@ -2,29 +2,29 @@
 
 namespace ViewsSourceGenerator
 {
-    public partial class ViewModelClassTemplate
+    internal partial class ViewModelClassTemplate
     {
-        public string ClassName { get; }
+        internal string ClassName { get; }
 
-        public string NamespaceName { get; }
+        internal string NamespaceName { get; }
 
-        public string[] MethodsToCall { get; }
+        internal string[] MethodsToCall { get; }
         
-        public string[] LocalizationKeys { get; }
+        internal string[] LocalizationKeys { get; }
         
-        public string[] PlaceholderLocalizationKeys { get; }
+        internal string[] PlaceholderLocalizationKeys { get; }
 
-        public SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
 
-        public bool NeedUniRx => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0 || SubscribeOnObservableInfos.Length > 0;
+        internal bool NeedUniRx => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0 || SubscribeOnObservableInfos.Length > 0;
         
-        public bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
+        internal bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
         
-        public bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
+        internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
         
-        public bool HasAutoCreatedObservables => SubscribeOnObservableInfos.Any(info => info.ShouldCreateObservableInViewModel);
+        internal bool HasAutoCreatedObservables => SubscribeOnObservableInfos.Any(info => info.ShouldCreateObservableInViewModel);
         
-        public ViewModelClassTemplate(
+        internal ViewModelClassTemplate(
             string className,
             string namespaceName,
             string[] methodsToCall,
