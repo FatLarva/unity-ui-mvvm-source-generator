@@ -15,8 +15,8 @@
 
 using System;
 
-//namespace ViewModelGeneration
-//{
+namespace ViewModelGeneration
+{
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class LocalizeWithKeyAttribute : Attribute
     {
@@ -27,4 +27,4 @@ using System;
             LocalizationKey = localizationKey;
         }
     }
-//}
+}
