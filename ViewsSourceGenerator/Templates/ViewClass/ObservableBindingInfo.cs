@@ -6,9 +6,9 @@ namespace ViewsSourceGenerator
     {
         public readonly string FieldName;
         public readonly string ObservableName;
-        public readonly BindingType BindingType;
+        public readonly InnerBindingType BindingType;
 
-        public ObservableBindingInfo(string fieldName, string observableName, BindingType bindingType)
+        public ObservableBindingInfo(string fieldName, string observableName, InnerBindingType bindingType)
         {
             FieldName = fieldName;
             ObservableName = observableName;
@@ -19,13 +19,13 @@ namespace ViewsSourceGenerator
         {
             switch (BindingType)
             {
-                case BindingType.Text:
+                case InnerBindingType.Text:
                     return $"{FieldName}.text = {observedValueName}";
-                case BindingType.ImageFill:
+                case InnerBindingType.ImageFill:
                     return $"{FieldName}.fillAmount = {observedValueName}";
-                case BindingType.GameObjectActivity:
+                case InnerBindingType.GameObjectActivity:
                     return $"{FieldName}.gameObject.SetActive({observedValueName})";
-                case BindingType.Activity:
+                case InnerBindingType.Activity:
                     return $"{FieldName}.SetActive({observedValueName})";
                 default:
                     throw new ArgumentOutOfRangeException();

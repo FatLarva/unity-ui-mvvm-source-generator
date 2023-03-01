@@ -14,6 +14,7 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using ViewModelGeneration;
 <#= NeedUniRx ? "using UniRx;" : "" #>
 <#= LocalizationKeys.Length > 0 ? "using LocalizationInterface;" : "" #>
 
