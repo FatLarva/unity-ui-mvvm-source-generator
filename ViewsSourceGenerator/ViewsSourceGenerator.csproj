@@ -47,6 +47,12 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>SubscribeOnViewModelsObservableAttributeTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\BindToObservable\BindToObservableAttributeTemplate.cs">
+        <DependentUpon>BindToObservableAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\BindingTypeEnum\BindingTypeEnumTemplate.cs">
+        <DependentUpon>BindingTypeEnumTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -85,6 +91,14 @@
       <None Update="Templates\SubscribeOnViewModelsObservable\SubscribeOnViewModelsObservableAttributeTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>SubscribeOnViewModelsObservableAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\BindToObservable\BindToObservableAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>BindToObservableAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\BindingTypeEnum\BindingTypeEnumTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>BindingTypeEnumTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 
