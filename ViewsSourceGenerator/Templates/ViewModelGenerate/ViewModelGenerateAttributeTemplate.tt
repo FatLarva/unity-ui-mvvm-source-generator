@@ -1,5 +1,4 @@
-<#@ template language="C#" linePragmas="false" #>
-<#@ template linePragmas="false" #>
+<#@ template language="C#" linePragmas="false" visibility="internal"#>
 
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
@@ -14,18 +13,20 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
-
 using System;
 
-[AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-public class ViewModelGenerateAttribute : Attribute
-{
-    public string ClassName { get; }
-    public string NamespaceName { get; }
-
-    public ViewModelGenerateAttribute(string className, string namespaceName)
+//namespace ViewModelGeneration
+//{
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public class ViewModelGenerateAttribute : Attribute
     {
-        ClassName = className;
-        NamespaceName = namespaceName;
+        public string ClassName { get; }
+        public string NamespaceName { get; }
+
+        public ViewModelGenerateAttribute(string className, string namespaceName)
+        {
+            ClassName = className;
+            NamespaceName = namespaceName;
+        }
     }
-}
+//}

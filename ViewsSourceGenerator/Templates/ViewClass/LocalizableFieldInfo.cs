@@ -1,6 +1,6 @@
 namespace ViewsSourceGenerator
 {
-    public readonly struct LocalizableFieldInfo
+    internal readonly struct LocalizableFieldInfo
     {
         public readonly string FieldName;
         public readonly string LocalizationKey;

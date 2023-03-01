@@ -1,6 +1,6 @@
 namespace ViewsSourceGenerator
 {
-    public readonly struct ButtonMethodCallInfo
+    internal readonly struct ButtonMethodCallInfo
     {
         public readonly string ButtonFieldName;
         public readonly string MethodToCall;

@@ -1,24 +1,24 @@
 ﻿namespace ViewsSourceGenerator
 {
-    public partial class ViewClassTemplate
+    internal partial class ViewClassTemplate
     {
-        public string ClassName { get; }
+        internal string ClassName { get; }
         
-        public string ViewModelClassName { get; }
+        internal string ViewModelClassName { get; }
 
-        public string NamespaceName { get; }
+        internal string NamespaceName { get; }
 
-        public ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
+        internal ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
         
-        public LocalizableFieldInfo[] LocalizableFieldInfos { get; }
+        internal LocalizableFieldInfo[] LocalizableFieldInfos { get; }
         
-        public LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
+        internal LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
 
-        public SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
 
-        public bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
+        internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        public ViewClassTemplate(
+        internal ViewClassTemplate(
             string className,
             string viewModelClassName,
             string namespaceName,

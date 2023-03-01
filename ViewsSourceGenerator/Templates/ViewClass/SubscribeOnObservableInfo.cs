@@ -1,6 +1,6 @@
 namespace ViewsSourceGenerator
 {
-    public readonly struct SubscribeOnObservableInfo
+    internal readonly struct SubscribeOnObservableInfo
     {
         public readonly string MethodName;
         public readonly string ObservableName;
