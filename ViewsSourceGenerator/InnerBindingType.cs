@@ -1,6 +1,6 @@
 ﻿namespace ViewsSourceGenerator
 {
-    internal enum BindingType
+    internal enum InnerBindingType
     {
         Text,
         ImageFill,

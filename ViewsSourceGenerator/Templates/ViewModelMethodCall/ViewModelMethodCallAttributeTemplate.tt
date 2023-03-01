@@ -15,8 +15,8 @@
 
 using System;
 
-//namespace ViewModelGeneration
-//{
+namespace <#=StaticConstants.AttributesNamespace#>
+{
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class ViewModelMethodCallAttribute : Attribute
     {
@@ -27,4 +27,4 @@ using System;
             MethodName = methodName;
         }
     }
-//}
+}

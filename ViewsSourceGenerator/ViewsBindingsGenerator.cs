@@ -53,6 +53,17 @@ namespace ViewsSourceGenerator
             
             if (receiver.IsEligible)
             {
+                const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
+                INamedTypeSymbol localizationProviderInterfaceSymbol = context.Compilation.GetTypeByMetadataName(localizationProviderClassName);
+            
+                if (localizationProviderInterfaceSymbol == null)
+                {
+                    var diagnostic = Diagnostic.Create(GetDiagnostic($"{localizationProviderClassName} should exist."), null);
+                    context.ReportDiagnostic(diagnostic);
+                
+                    return;
+                }
+                
                 foreach (var viewClass in receiver.ViewsClassesToProcess)
                 {
                     ProcessView(in context, viewClass);
@@ -62,20 +73,14 @@ namespace ViewsSourceGenerator
 
         private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewClass)
         {
-            const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
-            INamedTypeSymbol localizationProviderInterfaceSymbol = context.Compilation.GetTypeByMetadataName(localizationProviderClassName);
-            
-            if (localizationProviderInterfaceSymbol == null)
-            {
-                var diagnostic = Diagnostic.Create(GetDiagnostic($"{localizationProviderClassName} should exist."), null);
-                context.ReportDiagnostic(diagnostic);
-                
-                return;
-            }
-            
             var typeSymbol = viewClass;
             
-            INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName(ViewModelGenerateAttributeTemplate.AttributeName);
+            INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName(ViewModelGenerateAttributeTemplate.MetaDataName);
+            if (attributeSymbol == null)
+            {
+                var diagnostic1 = Diagnostic.Create(GetDiagnostic($"Cannot find symbol by MetadataName: {ViewModelGenerateAttributeTemplate.MetaDataName}"), null);
+                context.ReportDiagnostic(diagnostic1);
+            }
             
             var attribute = typeSymbol.GetAttributes().Single(
                 ad =>
@@ -251,7 +256,7 @@ namespace ViewsSourceGenerator
                 {
                     var attribute = field.GetAttributes().Single(ad => ad.AttributeClass?.Name == BindToObservableAttributeTemplate.AttributeName);
                     var observableName = attribute.ConstructorArguments[0].Value as string;
-                    var bindingType = (BindingType)attribute.ConstructorArguments[1].Value;
+                    var bindingType = (InnerBindingType)attribute.ConstructorArguments[1].Value;
                     
                     return new ObservableBindingInfo(field.Name, observableName, bindingType);
                 })

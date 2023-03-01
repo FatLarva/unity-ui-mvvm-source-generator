@@ -14,14 +14,14 @@
 // ------------------------------------------------------------------------------
 
 <#
-    var bindingTypeValues = Enum.GetNames(typeof(BindingType));
+    var bindingTypeValues = Enum.GetNames(typeof(InnerBindingType));
 #>
-//namespace ViewModelGeneration
-//{
+namespace <#=StaticConstants.AttributesNamespace#>
+{
     public enum BindingType
     {
-    <# foreach(var enumName in bindingTypeValues) {#>
+<# foreach(var enumName in bindingTypeValues) {#>
         <#= enumName #>,
-    <# } #>
+<# } #>
     }
-//}
+}

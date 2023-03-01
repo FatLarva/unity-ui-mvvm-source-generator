@@ -15,6 +15,7 @@
 
 using System;
 using UniRx;
+using ViewModelGeneration;
 
 <#if (HasNamespace) {#>
 namespace <#= NamespaceName #>

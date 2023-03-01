@@ -21,7 +21,7 @@ namespace ViewsSourceGenerator
                 if (IsDerivedFrom(typeSymbol, "MonoBehaviour"))
                 {
                     ImmutableArray<AttributeData>? attributes = typeSymbol?.GetAttributes();
-                    if (attributes!.Any((AttributeData ad) => ad.AttributeClass?.ToDisplayString() == ViewModelGenerateAttributeTemplate.AttributeName))
+                    if (attributes!.Any((AttributeData ad) => ad.AttributeClass?.Name == ViewModelGenerateAttributeTemplate.AttributeName))
                     {
                         ViewsClassesToProcess.Add(typeSymbol);
                     }

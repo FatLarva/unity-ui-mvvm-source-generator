@@ -15,7 +15,7 @@
 
 using System;
 
-namespace ViewModelGeneration
+namespace <#=StaticConstants.AttributesNamespace#>
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class SubscribeOnViewModelsObservableAttribute : Attribute
