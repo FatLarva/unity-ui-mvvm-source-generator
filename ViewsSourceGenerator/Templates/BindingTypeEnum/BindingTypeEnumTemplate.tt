@@ -18,7 +18,7 @@
 #>
 namespace <#=StaticConstants.AttributesNamespace#>
 {
-    public enum BindingType
+    internal enum BindingType
     {
 <# foreach(var enumName in bindingTypeValues) {#>
         <#= enumName #>,
