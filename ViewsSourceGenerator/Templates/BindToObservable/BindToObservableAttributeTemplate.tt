@@ -18,12 +18,12 @@ using System;
 namespace <#=StaticConstants.AttributesNamespace#>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public class BindToObservableAttribute : Attribute
+    internal class BindToObservableAttribute : Attribute
     {
         public string ObservableName { get; }
-        public BindingType BindingType { get; }
+        public <#=StaticConstants.AttributesNamespace#>.BindingType BindingType { get; }
 
-        public BindToObservableAttribute(string observableName, BindingType bindingType)
+        public BindToObservableAttribute(string observableName, <#=StaticConstants.AttributesNamespace#>.BindingType bindingType)
         {
             ObservableName = observableName;
             BindingType = bindingType;
