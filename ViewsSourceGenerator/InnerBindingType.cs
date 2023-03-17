@@ -6,5 +6,7 @@
         ImageFill,
         GameObjectActivity,
         Activity,
+        Color,
+        Sprite,
     }
 }

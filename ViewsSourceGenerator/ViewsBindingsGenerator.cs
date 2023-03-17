@@ -252,13 +252,19 @@ namespace ViewsSourceGenerator
             }
             
             var result = fieldsWithAttribute
-                .Select(field =>
+                .SelectMany(field =>
                 {
-                    var attribute = field.GetAttributes().Single(ad => ad.AttributeClass?.Name == BindToObservableAttributeTemplate.AttributeName);
-                    var observableName = attribute.ConstructorArguments[0].Value as string;
-                    var bindingType = (InnerBindingType)attribute.ConstructorArguments[1].Value;
-                    
-                    return new ObservableBindingInfo(field.Name, observableName, bindingType);
+                    var bindToAttributes = field.GetAttributes().Where(ad => ad.AttributeClass?.Name == BindToObservableAttributeTemplate.AttributeName);
+
+                    return bindToAttributes
+                        .Select(
+                            attribute =>
+                            {
+                                var observableName = attribute.ConstructorArguments[0].Value as string;
+                                var bindingType = (InnerBindingType)attribute.ConstructorArguments[1].Value;
+                                
+                                return new ObservableBindingInfo(field.Name, observableName, bindingType);
+                            });
                 })
                 .ToArray();
 
