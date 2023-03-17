@@ -27,6 +27,10 @@ namespace ViewsSourceGenerator
                     return $"{FieldName}.gameObject.SetActive({observedValueName})";
                 case InnerBindingType.Activity:
                     return $"{FieldName}.SetActive({observedValueName})";
+                case InnerBindingType.Color:
+                    return $"{FieldName}.color = {observedValueName}";
+                case InnerBindingType.Sprite:
+                    return $"{FieldName}.sprite = {observedValueName}";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
