@@ -262,8 +262,15 @@ namespace ViewsSourceGenerator
                             {
                                 var observableName = attribute.ConstructorArguments[0].Value as string;
                                 var bindingType = (InnerBindingType)attribute.ConstructorArguments[1].Value;
+                                var isNegated = false;
                                 
-                                return new ObservableBindingInfo(field.Name, observableName, bindingType);
+                                if (observableName.StartsWith("!"))
+                                {
+                                    observableName = observableName.Substring(1);
+                                    isNegated = true;
+                                }
+                                
+                                return new ObservableBindingInfo(field.Name, observableName, bindingType, isNegated);
                             });
                 })
                 .ToArray();

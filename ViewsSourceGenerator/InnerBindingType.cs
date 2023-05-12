@@ -8,5 +8,8 @@
         Activity,
         Color,
         Sprite,
+        Enabled,
+        Interactable,
+        Alpha,
     }
 }
