@@ -54,6 +54,9 @@
       <Compile Update="Templates\BindingTypeEnum\BindingTypeEnumTemplate.cs">
         <DependentUpon>BindingTypeEnumTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\AutoCreationFlagEnum\AutoCreationFlagEnumTemplate.cs">
+        <DependentUpon>AutoCreationFlagEnumTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -100,6 +103,10 @@
       <None Update="Templates\BindingTypeEnum\BindingTypeEnumTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>BindingTypeEnumTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\AutoCreationFlagEnum\AutoCreationFlagEnumTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>AutoCreationFlagEnumTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 
