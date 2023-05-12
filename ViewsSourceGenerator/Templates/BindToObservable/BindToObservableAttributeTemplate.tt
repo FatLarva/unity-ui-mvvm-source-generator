@@ -15,15 +15,18 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
+<# var ns = StaticConstants.AttributesNamespace; #>
+
+namespace <#=ns#>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
     internal class BindToObservableAttribute : Attribute
     {
         public string ObservableName { get; }
-        public <#=StaticConstants.AttributesNamespace#>.BindingType BindingType { get; }
+        public <#=ns#>.BindingType BindingType { get; }
+        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; } = <#=ns#>.AutoCreationFlag.PublicCommand | <#=ns#>.AutoCreationFlag.PrivateCommand;
 
-        public BindToObservableAttribute(string observableName, <#=StaticConstants.AttributesNamespace#>.BindingType bindingType)
+        public BindToObservableAttribute(string observableName, <#=ns#>.BindingType bindingType)
         {
             ObservableName = observableName;
             BindingType = bindingType;
