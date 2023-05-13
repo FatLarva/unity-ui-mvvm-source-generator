@@ -5,10 +5,13 @@ namespace ViewsSourceGenerator
     [Flags]
     internal enum InnerAutoCreationFlag
     {
+        None = 0,
         PublicObservable = 1 << 0,
         PublicReactiveProperty = 1 << 1,
-        PublicCommand = 1 << 2,
-        PrivateReactiveProperty = 1 << 3,
-        PrivateCommand = 1 << 4,
+        PrivateReactiveProperty = 1 << 2,
+        PrivateCommand = 1 << 3,
+        
+        WrappedCommand = PublicObservable | PrivateCommand,
+        WrappedReactiveProperty = PublicReactiveProperty | PrivateReactiveProperty,
     }
 }

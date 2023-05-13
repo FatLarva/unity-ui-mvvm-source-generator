@@ -15,18 +15,18 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
+<# var ns = StaticConstants.AttributesNamespace; #>
+namespace <#=ns#>
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class SubscribeOnViewModelsObservableAttribute : Attribute
+    internal class SubscribeOnViewModelsObservableAttribute : Attribute
     {
         public string ObservableName;
-        public bool CreateInViewModel;
+        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; } = <#=ns#>.AutoCreationFlag.PublicObservable | <#=ns#>.AutoCreationFlag.PrivateCommand;
 
-        public SubscribeOnViewModelsObservableAttribute(string observableName, bool createInViewModel = false)
+        public SubscribeOnViewModelsObservableAttribute(string observableName)
         {
             ObservableName = observableName;
-            CreateInViewModel = createInViewModel;
         }
     }
 }

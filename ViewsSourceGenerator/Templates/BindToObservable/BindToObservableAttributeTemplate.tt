@@ -24,7 +24,7 @@ namespace <#=ns#>
     {
         public string ObservableName { get; }
         public <#=ns#>.BindingType BindingType { get; }
-        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; } = <#=ns#>.AutoCreationFlag.PublicCommand | <#=ns#>.AutoCreationFlag.PrivateCommand;
+        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; } = <#=ns#>.AutoCreationFlag.PublicObservable | <#=ns#>.AutoCreationFlag.PrivateCommand;
 
         public BindToObservableAttribute(string observableName, <#=ns#>.BindingType bindingType)
         {

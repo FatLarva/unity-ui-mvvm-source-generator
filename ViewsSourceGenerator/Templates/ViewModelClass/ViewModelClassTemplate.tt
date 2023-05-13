@@ -15,7 +15,8 @@
 
 using System;
 using ViewModelGeneration;
-<#= NeedUniRx ? "using UniRx;" : "" #>
+using UniRx;
+using System.Threading.Tasks;
 <#= LocalizationKeys.Length > 0 ? "using LocalizationInterface;" : "" #>
 
 <# if (HasNamespace) { #>
@@ -25,8 +26,8 @@ namespace <#= NamespaceName #>
     public partial class <#= ClassName #>
     {
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
-<#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
-		private readonly <#=subscribeInfo.GetReactiveCommandType()#> _<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd = new();
+<#		if (subscribeInfo.HasPrivateCreations) { #>
+		<#=subscribeInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var localizationKey in LocalizationKeys) { #>
@@ -36,10 +37,22 @@ namespace <#= NamespaceName #>
 		public readonly ReactiveProperty<string> <#=localizationKey.ToPascalCase()#> = new();
 <#  } #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
-<#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
-		public IObservable<<#=subscribeInfo.GetObservableArgumentType()#>> <#=subscribeInfo.ObservableName#> => _<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd;
+<#		if (subscribeInfo.HasPublicCreations) { #>
+		<#=subscribeInfo.GetAutoCreatedObserversPublicPart()#>
 <#		} #>
 <#  } #>
+		
+		private readonly CompositeDisposable _lifetimeDisposable = new();
+
+		<#=GetCtorDefinition()#>
+		{
+<# if (HasObservablesToDispose) { #>
+			HandleAutoCreatedObservables(_lifetimeDisposable);
+<# } #>
+<# if (NeedLocalization) { #>
+			HandleLocalization(localizationProvider, _lifetimeDisposable);
+<# } #>
+		}
 <#	foreach (var methodName in MethodsToCall) { #>
 
         public void <#= methodName #>()
@@ -49,19 +62,19 @@ namespace <#= NamespaceName #>
 		partial void On<#= methodName #>();
 <#  } #>
 
-<# if (HasAutoCreatedObservables) { #>
+<# if (HasObservablesToDispose) { #>
 		private void HandleAutoCreatedObservables(CompositeDisposable compositeDisposable)
 		{
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
-<#		if (subscribeInfo.ShouldCreateObservableInViewModel) { #>
-			_<#=subscribeInfo.ObservableName.Decapitalize()#>Cmd.AddTo(compositeDisposable);
+<#		if (subscribeInfo.HasPrivateCreations) { #>
+			<#=subscribeInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
 		}
 <# } #>
 
 <# if (NeedLocalization) { #>
-		private void HandleLocalization(ILocalizationProvider localizationProvider, CompositeDisposable compositeDisposable)
+		private async void HandleLocalization(ILocalizationProvider localizationProvider, CompositeDisposable compositeDisposable)
 		{
 			Observable.FromEvent(
 					handler => localizationProvider.LanguageChanged += handler,
@@ -69,6 +82,8 @@ namespace <#= NamespaceName #>
 				.Subscribe(_ => ApplyLocalization(localizationProvider))
 				.AddTo(compositeDisposable);
 
+			await Task.Yield();
+			
 			ApplyLocalization(localizationProvider);
 		}
 

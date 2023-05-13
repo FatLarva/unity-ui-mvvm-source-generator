@@ -16,13 +16,11 @@ namespace ViewsSourceGenerator
 
         internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
 
-        internal bool NeedUniRx => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0 || SubscribeOnObservableInfos.Length > 0;
-        
         internal bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
         
         internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
         
-        internal bool HasAutoCreatedObservables => SubscribeOnObservableInfos.Any(info => info.ShouldCreateObservableInViewModel);
+        internal bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose);
         
         internal ViewModelClassTemplate(
             string className,
@@ -38,6 +36,16 @@ namespace ViewsSourceGenerator
             LocalizationKeys = localizationKeys;
             PlaceholderLocalizationKeys = placeholderLocalizationKeys;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
+        }
+
+        private string GetCtorDefinition()
+        {
+            if (NeedLocalization)
+            {
+                return $"private {ClassName}(ILocalizationProvider localizationProvider)";
+            }
+            
+            return $"private {ClassName}()";
         }
     }
 }

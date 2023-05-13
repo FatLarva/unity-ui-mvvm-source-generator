@@ -23,8 +23,9 @@ namespace <#=StaticConstants.AttributesNamespace#>
     [Flags]
     internal enum AutoCreationFlag
     {
-<# foreach(var enumName in autoCreationFlagValues) {#>
-        <#= enumName #>,
+<# for(var i = 1; i < autoCreationFlagValues.Length; i++) {#>
+<#     var enumName = autoCreationFlagValues[i]; #>
+        <#= enumName #> = <#= (int)Enum.Parse(typeof(InnerAutoCreationFlag), enumName) #>,
 <# } #>
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -219,26 +220,57 @@ namespace ViewsSourceGenerator
             {
                 return Array.Empty<SubscribeOnObservableInfo>();
             }
+            
+            try
+            {
+                var result = methodsWithAttribute
+                    .Select(method =>
+                    {
+                        var attribute = method
+                            .GetAttributes()
+                            .Single(ad => ad.AttributeClass?.Name == SubscribeOnViewModelsObservableAttributeTemplate.AttributeName);
 
-            var result = methodsWithAttribute
-                .Select(method =>
-                {
-                    var attribute = method
-                        .GetAttributes()
-                        .Single(ad => ad.AttributeClass?.Name == SubscribeOnViewModelsObservableAttributeTemplate.AttributeName);
+                        var observableName = attribute.ConstructorArguments[0].Value as string;
 
-                    var observableName = attribute.ConstructorArguments[0].Value as string;
-                    var shouldCreateObservableInViewModel = (bool)attribute.ConstructorArguments[1].Value!;
-                    var methodName = method.Name;
-                    var methodArgumentType = method.Parameters.Any() ? method.Parameters[0].Type.Name : "Unit";
+                        if (!TryGetFlagsFromNamedArgument(attribute.NamedArguments, out var creationFlags))
+                        {
+                            creationFlags = InnerAutoCreationFlag.None;
+                        }
+
+                        var methodName = method.Name;
+                        var methodArgumentType = method.Parameters.Any() ? method.Parameters[0].Type.Name : "Unit";
                     
-                    return new SubscribeOnObservableInfo(methodName, observableName, shouldCreateObservableInViewModel, methodArgumentType);
-                })
-                .ToArray();
+                        return new SubscribeOnObservableInfo(methodName, observableName, creationFlags, methodArgumentType);
+                    })
+                    .ToArray();
 
-            return result;
+                return result;
+            }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine(e);
+            }
+            
+            return Array.Empty<SubscribeOnObservableInfo>();
         }
-        
+
+        private bool TryGetFlagsFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out InnerAutoCreationFlag flags)
+        {
+            foreach (var kvp in namedArguments)
+            {
+                if (string.Equals(kvp.Key, AutoCreationFlagEnumTemplate.EnumName, StringComparison.Ordinal))
+                {
+                    flags = (InnerAutoCreationFlag)kvp.Value.Value!;
+                
+                    return true;
+                }
+            }
+
+            flags = default;
+
+            return false;
+        }
+
         private ObservableBindingInfo[] GetObservablesBindingsInfos(INamedTypeSymbol typeSymbol)
         {
             List<IFieldSymbol> fieldsWithAttribute = typeSymbol
