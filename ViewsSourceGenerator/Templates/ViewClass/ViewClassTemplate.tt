@@ -15,6 +15,7 @@
 
 using System;
 using UniRx;
+using Tools;
 using ViewModelGeneration;
 
 <#if (HasNamespace) {#>
@@ -24,34 +25,42 @@ namespace <#= NamespaceName #>
     public partial class <#= ClassName #>
     {
 		private <#= ViewModelClassName #> _model;
-		private CompositeDisposable _compositeDisposable;
+		private CompositeDisposable _oneInitDisposable;
+        private ChangeCheckedValue<bool> _isInitiated;
 
 		public void Init(<#= ViewModelClassName #> model)
 		{
+			if (!_isInitiated.TryFlip(true))
+			{
+				return;
+			}
+
 			_model = model;
 			
-			_compositeDisposable?.Dispose();
-			_compositeDisposable = new CompositeDisposable();
+			_oneInitDisposable?.Dispose();
+			_oneInitDisposable = new CompositeDisposable();
 
 <#	foreach (var observableBindingInfo in ObservableBindingInfos) { #>
-			model.<#=observableBindingInfo.ObservableName#>.Subscribe(observedValue => <#=observableBindingInfo.GenerateAssignment("observedValue")#>).AddTo(_compositeDisposable);
-<#  } #>
+			model.<#=observableBindingInfo.ObservableName#><#=observableBindingInfo.DelayIfNeeded()#>
+				.Subscribe(observedValue => <#=observableBindingInfo.GenerateAssignment("observedValue")#>)
+				.AddTo(_oneInitDisposable);
 
+<#  } #>
 <#	foreach (var info in ButtonMethodCallInfo) { #>
-			<#= info.ButtonFieldName #>.OnClickAsObservable().Subscribe(_ => model.<#= info.MethodToCall #>()).AddTo(_compositeDisposable);
+			<#= info.ButtonFieldName #>.OnClickAsObservable().Subscribe(_ => model.<#= info.MethodToCall #>()).AddTo(_oneInitDisposable);
 <# } #>
         
 <#	foreach (var localizableFieldInfo in LocalizableFieldInfos) { #>
-			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.text = text).AddTo(_compositeDisposable);
+			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.text = text).AddTo(_oneInitDisposable);
 <#  } #>
 <#	foreach (var localizableFieldInfo in LocalizablePlaceholderFieldInfos) { #>
-			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text = text).AddTo(_compositeDisposable);
+			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text = text).AddTo(_oneInitDisposable);
 <#  } #>
 <#	foreach (var info in SubscribeOnObservableInfos) { #>
 <#		if (info.HasObservableArgument) { #>
-			model.<#=info.ObservableName#>.Subscribe(<#=info.MethodName#>).AddTo(_compositeDisposable);
+			model.<#=info.ObservableName#>.Subscribe(<#=info.MethodName#>).AddTo(_oneInitDisposable);
 <#      } else {#>
-			model.<#=info.ObservableName#>.Subscribe(_ => <#=info.MethodName#>()).AddTo(_compositeDisposable);
+			model.<#=info.ObservableName#>.Subscribe(_ => <#=info.MethodName#>()).AddTo(_oneInitDisposable);
 <#      } #>
 <#  } #>
 
@@ -60,10 +69,17 @@ namespace <#= NamespaceName #>
 		
 		public void Deinit()
 		{
-			_compositeDisposable?.Dispose();
-			_compositeDisposable = null;
+			if (!_isInitiated.TryFlip(false))
+			{
+				return;
+			}
 
 			ManualDeinit();
+
+			_oneInitDisposable?.Dispose();
+			_oneInitDisposable = null;
+			
+			_model = null;
 		}
 
 		partial void ManualInit(<#= ViewModelClassName #> model);

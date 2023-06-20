@@ -25,6 +25,8 @@ namespace <#=ns#>
         public string ObservableName { get; }
         public <#=ns#>.BindingType BindingType { get; }
         public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; } = <#=ns#>.AutoCreationFlag.PublicObservable | <#=ns#>.AutoCreationFlag.PrivateCommand;
+        public int DelayFrames { get; set; }
+        public int DelaySeconds { get; set; }
 
         public BindToObservableAttribute(string observableName, <#=ns#>.BindingType bindingType)
         {

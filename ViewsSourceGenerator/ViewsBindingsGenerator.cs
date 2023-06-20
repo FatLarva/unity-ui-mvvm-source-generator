@@ -270,6 +270,30 @@ namespace ViewsSourceGenerator
 
             return false;
         }
+        
+        private bool TryGetDelayFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out ObservableBindingDelaySettings? delaySettings)
+        {
+            foreach (var kvp in namedArguments)
+            {
+                if (string.Equals(kvp.Key, "DelaySeconds", StringComparison.Ordinal))
+                {
+                    delaySettings = new ObservableBindingDelaySettings(false, (int)kvp.Value.Value!);
+                
+                    return true;
+                }
+                
+                if (string.Equals(kvp.Key, "DelayFrames", StringComparison.Ordinal))
+                {
+                    delaySettings = new ObservableBindingDelaySettings(true, (int)kvp.Value.Value!);
+                
+                    return true;
+                }
+            }
+
+            delaySettings = default;
+
+            return false;
+        }
 
         private ObservableBindingInfo[] GetObservablesBindingsInfos(INamedTypeSymbol typeSymbol)
         {
@@ -293,6 +317,8 @@ namespace ViewsSourceGenerator
                         .Select(
                             attribute =>
                             {
+                                TryGetDelayFromNamedArgument(attribute.NamedArguments, out var delaySettings);
+                                
                                 var observableName = attribute.ConstructorArguments[0].Value as string;
                                 var bindingType = (InnerBindingType)attribute.ConstructorArguments[1].Value;
                                 var isNegated = false;
@@ -303,7 +329,7 @@ namespace ViewsSourceGenerator
                                     isNegated = true;
                                 }
                                 
-                                return new ObservableBindingInfo(field.Name, observableName, bindingType, isNegated);
+                                return new ObservableBindingInfo(field.Name, observableName, bindingType, isNegated, delaySettings);
                             });
                 })
                 .ToArray();
