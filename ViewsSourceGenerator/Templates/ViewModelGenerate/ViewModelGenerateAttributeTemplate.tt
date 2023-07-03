@@ -22,6 +22,7 @@ namespace <#=StaticConstants.AttributesNamespace#>
     {
         public string ClassName { get; }
         public string NamespaceName { get; }
+        public bool SkipViewModelGeneration { get; set; }
 
         public ViewModelGenerateAttribute(string className, string namespaceName)
         {
