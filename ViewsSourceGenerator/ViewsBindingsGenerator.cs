@@ -91,7 +91,16 @@ namespace ViewsSourceGenerator
             var viewModelClassName = (string)attribute.ConstructorArguments[0].Value;
             var viewModelNamespaceName = (string)attribute.ConstructorArguments[1].Value;
             
-            GenerateViewModel(in context, typeSymbol, viewModelClassName, viewModelNamespaceName);
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, "SkipViewModelGeneration", out bool skipViewModelGeneration))
+            {
+                skipViewModelGeneration = false;
+            }
+
+            if (!skipViewModelGeneration)
+            {
+                GenerateViewModel(in context, typeSymbol, viewModelClassName, viewModelNamespaceName);
+            }
+
             GenerateView(in context, typeSymbol, viewModelClassName);
                 
             /*var diagnostic1 = Diagnostic.Create(GetDiagnostic($"Type that needed ViewModel: {attribute.NamedArguments.Length}"), null);
@@ -291,6 +300,23 @@ namespace ViewsSourceGenerator
             }
 
             delaySettings = default;
+
+            return false;
+        }
+        
+        private bool TryGetNamedArgumentValue<T>(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, string argumentName, out T argumentValue)
+        {
+            foreach (var kvp in namedArguments)
+            {
+                if (string.Equals(kvp.Key, argumentName, StringComparison.Ordinal))
+                {
+                    argumentValue = (T)kvp.Value.Value!;
+                
+                    return true;
+                }
+            }
+
+            argumentValue = default;
 
             return false;
         }
