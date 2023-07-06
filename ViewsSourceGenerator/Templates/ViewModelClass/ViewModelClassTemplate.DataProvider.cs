@@ -4,23 +4,23 @@ namespace ViewsSourceGenerator
 {
     internal partial class ViewModelClassTemplate
     {
-        internal string ClassName { get; }
+        private string ClassName { get; }
 
-        internal string NamespaceName { get; }
+        private string NamespaceName { get; }
 
-        internal string[] MethodsToCall { get; }
-        
-        internal string[] LocalizationKeys { get; }
-        
-        internal string[] PlaceholderLocalizationKeys { get; }
+        private string[] MethodsToCall { get; }
 
-        internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        private string[] LocalizationKeys { get; }
 
-        internal bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
-        
-        internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
-        
-        internal bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose);
+        private string[] PlaceholderLocalizationKeys { get; }
+
+        private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+
+        private bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
+
+        private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
+
+        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose);
         
         internal ViewModelClassTemplate(
             string className,
@@ -38,14 +38,14 @@ namespace ViewsSourceGenerator
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
         }
 
-        private string GetCtorDefinition()
+        private string GetHandleAutoBindingsDefinition()
         {
             if (NeedLocalization)
             {
-                return $"private {ClassName}(ILocalizationProvider localizationProvider)";
+                return "private void HandleAutoBindings(ILocalizationProvider localizationProvider)";
             }
             
-            return $"private {ClassName}()";
+            return "private void HandleAutoBindings()";
         }
     }
 }
