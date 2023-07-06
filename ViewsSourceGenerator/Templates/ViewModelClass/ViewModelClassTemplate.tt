@@ -16,13 +16,13 @@
 using System;
 using ViewModelGeneration;
 using UniRx;
-using System.Threading.Tasks;
 <#= LocalizationKeys.Length > 0 ? "using LocalizationInterface;" : "" #>
 
 <# if (HasNamespace) { #>
 namespace <#= NamespaceName #>
 {
 <# } #>
+	[GeneratedViewModel]
     public partial class <#= ClassName #>
     {
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
@@ -44,7 +44,7 @@ namespace <#= NamespaceName #>
 		
 		private readonly CompositeDisposable _lifetimeDisposable = new();
 
-		<#=GetCtorDefinition()#>
+		<#=GetHandleAutoBindingsDefinition()#>
 		{
 <# if (HasObservablesToDispose) { #>
 			HandleAutoCreatedObservables(_lifetimeDisposable);
@@ -74,7 +74,7 @@ namespace <#= NamespaceName #>
 <# } #>
 
 <# if (NeedLocalization) { #>
-		private async void HandleLocalization(ILocalizationProvider localizationProvider, CompositeDisposable compositeDisposable)
+		private void HandleLocalization(ILocalizationProvider localizationProvider, CompositeDisposable compositeDisposable)
 		{
 			Observable.FromEvent(
 					handler => localizationProvider.LanguageChanged += handler,
@@ -82,8 +82,6 @@ namespace <#= NamespaceName #>
 				.Subscribe(_ => ApplyLocalization(localizationProvider))
 				.AddTo(compositeDisposable);
 
-			await Task.Yield();
-			
 			ApplyLocalization(localizationProvider);
 		}
 

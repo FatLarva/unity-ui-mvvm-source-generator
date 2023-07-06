@@ -57,6 +57,11 @@
       <Compile Update="Templates\AutoCreationFlagEnum\AutoCreationFlagEnumTemplate.cs">
         <DependentUpon>AutoCreationFlagEnumTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\GeneratedViewModel\GeneratedViewModelAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>GeneratedViewModelAttributeTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -107,6 +112,10 @@
       <None Update="Templates\AutoCreationFlagEnum\AutoCreationFlagEnumTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>AutoCreationFlagEnumTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\GeneratedViewModel\GeneratedViewModelAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>GeneratedViewModelAttributeTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 
