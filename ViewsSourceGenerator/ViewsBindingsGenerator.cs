@@ -115,18 +115,32 @@ namespace ViewsSourceGenerator
             var placeholderLocalizationKeys = GetFieldsToLocalizePlaceholders(typeSymbol);
             var methodForAutoSubscription = GetMethodsForAutoSubscription(typeSymbol);
 
+            INamedTypeSymbol viewModelClass = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
+            
+            bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(viewModelClass);
+            
             var classTemplate = new ViewModelClassTemplate(
                 viewModelClassName,
                 viewModelNamespaceName,
                 methodsToCall,
                 localizationKeys,
                 placeholderLocalizationKeys,
-                methodForAutoSubscription);
+                methodForAutoSubscription,
+                shouldImplementDisposeInterface);
             var classFileName = $"{viewModelClassName}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
         }
-        
+
+        private bool IsIDisposableImplementedInHandwrittenPart(INamedTypeSymbol viewModelClass)
+        {
+            var disposeMethod = viewModelClass?.GetMembers()
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(method => method.Name == "Dispose" && method.ReturnsVoid && method.DeclaredAccessibility == Accessibility.Public);
+
+            return disposeMethod != null;
+        }
+
         private void GenerateView(in GeneratorExecutionContext context, INamedTypeSymbol typeSymbol, string viewModelClassName)
         {
             var viewClassName = typeSymbol.Name;

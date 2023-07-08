@@ -20,15 +20,18 @@ namespace ViewsSourceGenerator
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose);
-        
+        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose) || NeedLocalization;
+
+        public bool ShouldImplementDisposeInterface { get; }
+
         internal ViewModelClassTemplate(
             string className,
             string namespaceName,
             string[] methodsToCall,
             string[] localizationKeys,
             string[] placeholderLocalizationKeys,
-            SubscribeOnObservableInfo[] subscribeOnObservableInfos)
+            SubscribeOnObservableInfo[] subscribeOnObservableInfos,
+            bool shouldImplementDisposeInterface)
         {
             ClassName = className;
             NamespaceName = namespaceName;
@@ -36,6 +39,7 @@ namespace ViewsSourceGenerator
             LocalizationKeys = localizationKeys;
             PlaceholderLocalizationKeys = placeholderLocalizationKeys;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
+            ShouldImplementDisposeInterface = shouldImplementDisposeInterface;
         }
 
         private string GetHandleAutoBindingsDefinition()

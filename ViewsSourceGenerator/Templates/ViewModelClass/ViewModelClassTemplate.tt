@@ -16,14 +16,14 @@
 using System;
 using ViewModelGeneration;
 using UniRx;
-<#= LocalizationKeys.Length > 0 ? "using LocalizationInterface;" : "" #>
+<#= NeedLocalization ? "using LocalizationInterface;" : "" #>
 
 <# if (HasNamespace) { #>
 namespace <#= NamespaceName #>
 {
 <# } #>
 	[GeneratedViewModel]
-    public partial class <#= ClassName #>
+    public partial class <#= ClassName #> : IDisposable
     {
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
@@ -43,6 +43,13 @@ namespace <#= NamespaceName #>
 <#  } #>
 		
 		private readonly CompositeDisposable _lifetimeDisposable = new();
+<# if (ShouldImplementDisposeInterface) { #>
+		
+		public void Dispose()
+		{
+			HandleAutoDispose();
+		}
+<# } #>
 
 		<#=GetHandleAutoBindingsDefinition()#>
 		{
@@ -52,6 +59,11 @@ namespace <#= NamespaceName #>
 <# if (NeedLocalization) { #>
 			HandleLocalization(localizationProvider, _lifetimeDisposable);
 <# } #>
+		}
+
+		private void HandleAutoDispose()	
+		{
+			_lifetimeDisposable.Dispose();
 		}
 <#	foreach (var methodName in MethodsToCall) { #>
 
@@ -69,6 +81,12 @@ namespace <#= NamespaceName #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
 			<#=subscribeInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
+<#  } #>
+<#	foreach (var localizationKey in LocalizationKeys) { #>
+			<#=localizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
+<#  } #>
+<#	foreach (var localizationPlaceholderKey in PlaceholderLocalizationKeys) { #>
+			<#=localizationPlaceholderKey.ToPascalCase()#>.AddTo(compositeDisposable);
 <#  } #>
 		}
 <# } #>

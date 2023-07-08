@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -15,17 +14,24 @@ namespace ViewsSourceGenerator
         private const string Category = "ConstructionSafety";
         private const string HelpLinkUri = "";
         
-        private const string HandlingMethodName = "HandleAutoBindings";
+        private const string HandlingAutoBindingsMethodName = "HandleAutoBindings";
+        private const string HandlingAutoDisposeMethodName = "HandleAutoDispose";
         
-        private static readonly LocalizableString Title = "HandleAutoBindings method should be called during constructor.";
-        private static readonly LocalizableString MessageFormat = "HandleAutoBindings method should be called during constructor.";
-        private static readonly LocalizableString Description = "HandleAutoBindings method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleTitle = "HandleAutoBindings method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleMessageFormat = "HandleAutoBindings method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleDescription = "HandleAutoBindings method should be called during constructor.";
+        
+        private static readonly LocalizableString AutoDisposeTitle = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeMessageFormat = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeDescription = "HandleAutoDispose method should be called during Dispose() method.";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat,
-            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description,
-            helpLinkUri: HelpLinkUri);
+        private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription, helpLinkUri: HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor AutoDisposeRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeTitle, AutoDisposeMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeDescription, helpLinkUri: HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeRule);
 
 
         public override void Initialize(AnalysisContext context)
@@ -49,40 +55,91 @@ namespace ViewsSourceGenerator
                     return;
                 }
 
-                var constructors = classNode.ChildNodes().OfType<ConstructorDeclarationSyntax>().ToImmutableArray();
-                if (!constructors.Any())
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(Rule, classDeclarationSyntax.GetLocation()));
-                    return;
-                }
-
-                foreach (var constructorDeclarationSyntax in constructors)
-                {
-                    foreach (var expressionSyntax in constructorDeclarationSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
-                    {
-                        if (!IsInvocationOfThisObjectsMethod(expressionSyntax))
-                        {
-                            continue;
-                        }
-
-                        if (context.SemanticModel.GetSymbolInfo(expressionSyntax).Symbol is not IMethodSymbol methodSymbol)
-                        {
-                            continue;
-                        }
-
-                        if (methodSymbol.Name == HandlingMethodName)
-                        {
-                            return;
-                        }
-                    }
-                }
-                
-                var diagnostic = Diagnostic.Create(Rule, constructors.First().GetLocation());
-                context.ReportDiagnostic(diagnostic);
+                ReportNotCallingHandleAutoBindingsInConstructor(context, classNode, classDeclarationSyntax);
+                ReportNotCallingHandleAutoDisposeInDispose(context, classNode);
             }
         }
 
-        private SyntaxNode GetHandwrittenPartOfClass(ITypeSymbol classSymbol)
+        private static void ReportNotCallingHandleAutoBindingsInConstructor(SyntaxNodeAnalysisContext context, SyntaxNode classNode, ClassDeclarationSyntax classDeclarationSyntax)
+        {
+            var constructors = classNode.ChildNodes().OfType<ConstructorDeclarationSyntax>().ToImmutableArray();
+            if (!constructors.Any())
+            {
+                context.ReportDiagnostic(Diagnostic.Create(AutoBindingsRule, classDeclarationSyntax.GetLocation()));
+
+                return;
+            }
+
+            foreach (var constructorDeclarationSyntax in constructors)
+            {
+                foreach (var expressionSyntax in constructorDeclarationSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+                {
+                    if (!IsInvocationOfThisObjectsMethod(expressionSyntax))
+                    {
+                        continue;
+                    }
+
+                    if (context.SemanticModel.GetSymbolInfo(expressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                    {
+                        continue;
+                    }
+
+                    if (methodSymbol.Name == HandlingAutoBindingsMethodName)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            var diagnostic = Diagnostic.Create(AutoBindingsRule, constructors.First().GetLocation());
+            context.ReportDiagnostic(diagnostic);
+        }
+        
+        private static void ReportNotCallingHandleAutoDisposeInDispose(SyntaxNodeAnalysisContext context, SyntaxNode classNode)
+        {
+            var disposeMethodSyntax = classNode
+                .ChildNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(
+                    method =>
+                    {
+                        bool isDisposeImplementation = method.Modifiers.Any(SyntaxKind.PublicKeyword);
+                        isDisposeImplementation &= method.ReturnType is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword);
+                        isDisposeImplementation &= method.ParameterList.Parameters.Count == 0;
+                        isDisposeImplementation &= method.Identifier.Text == "Dispose";
+
+                        return isDisposeImplementation;
+                    })
+                .FirstOrDefault();
+            
+            if (disposeMethodSyntax == null)
+            {
+                return;
+            }
+            
+            foreach (var expressionSyntax in disposeMethodSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+            {
+                if (!IsInvocationOfThisObjectsMethod(expressionSyntax))
+                {
+                    continue;
+                }
+
+                if (context.SemanticModel.GetSymbolInfo(expressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                {
+                    continue;
+                }
+
+                if (methodSymbol.Name == HandlingAutoDisposeMethodName)
+                {
+                    return;
+                }
+            }
+            
+            var diagnostic = Diagnostic.Create(AutoDisposeRule, disposeMethodSyntax.GetLocation());
+            context.ReportDiagnostic(diagnostic);
+        }
+
+        private static SyntaxNode GetHandwrittenPartOfClass(ITypeSymbol classSymbol)
         {
             var className = classSymbol.Name;
             foreach (var declarationReference in classSymbol.DeclaringSyntaxReferences)
