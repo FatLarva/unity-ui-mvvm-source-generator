@@ -89,9 +89,16 @@ namespace ViewsSourceGenerator
                 ad =>
                     attributeSymbol!.Equals(ad.AttributeClass, SymbolEqualityComparer.Default));
             
-            var viewModelClassName = (string)attribute.ConstructorArguments[0].Value;
-            var viewModelNamespaceName = (string)attribute.ConstructorArguments[1].Value;
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, "ViewModelClassName", out string viewModelClassName))
+            {
+                viewModelClassName = typeSymbol.Name + "Model";
+            }
             
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, "ViewModelNamespaceName", out string viewModelNamespaceName))
+            {
+                viewModelNamespaceName = GetFullNamespace(typeSymbol);
+            }
+
             if (!TryGetNamedArgumentValue(attribute.NamedArguments, "SkipViewModelGeneration", out bool skipViewModelGeneration))
             {
                 skipViewModelGeneration = false;
@@ -108,12 +115,12 @@ namespace ViewsSourceGenerator
             context.ReportDiagnostic(diagnostic1);*/
         }
 
-        private void GenerateViewModel(in GeneratorExecutionContext context, INamedTypeSymbol typeSymbol, string viewModelClassName, string viewModelNamespaceName)
+        private void GenerateViewModel(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName, string viewModelNamespaceName)
         {
-            var methodsToCall = GetMethodsToCall(typeSymbol);
-            var localizationKeys = GetFieldsToLocalize(typeSymbol);
-            var placeholderLocalizationKeys = GetFieldsToLocalizePlaceholders(typeSymbol);
-            var methodForAutoSubscription = GetMethodsForAutoSubscription(typeSymbol);
+            var methodsToCall = GetMethodsToCall(viewTypeSymbol);
+            var localizationKeys = GetFieldsToLocalize(viewTypeSymbol);
+            var placeholderLocalizationKeys = GetFieldsToLocalizePlaceholders(viewTypeSymbol);
+            var methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
 
             INamedTypeSymbol viewModelClass = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
             
@@ -127,30 +134,22 @@ namespace ViewsSourceGenerator
                 placeholderLocalizationKeys,
                 methodForAutoSubscription,
                 shouldImplementDisposeInterface);
+            
             var classFileName = $"{viewModelClassName}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
         }
 
-        private bool IsIDisposableImplementedInHandwrittenPart(INamedTypeSymbol viewModelClass)
+        private void GenerateView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName)
         {
-            var disposeMethod = viewModelClass?.GetMembers()
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault(method => method.Name == "Dispose" && method.ReturnsVoid && method.DeclaredAccessibility == Accessibility.Public);
-
-            return disposeMethod != null;
-        }
-
-        private void GenerateView(in GeneratorExecutionContext context, INamedTypeSymbol typeSymbol, string viewModelClassName)
-        {
-            var viewClassName = typeSymbol.Name;
-            var viewNamespaceName = typeSymbol.ContainingNamespace.ToDisplayString();
+            var viewClassName = viewTypeSymbol.Name;
+            var viewNamespaceName = GetFullNamespace(viewTypeSymbol);
             
-            var methodsToCall = GetButtonMethodCallInfo(typeSymbol);
-            var fieldsToLocalize = GetLocalizableFieldInfos(typeSymbol);
-            var fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(typeSymbol);
-            var methodForAutoSubscription = GetMethodsForAutoSubscription(typeSymbol);
-            var observablesBindings = GetObservablesBindingsInfos(typeSymbol);
+            var methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol);
+            var fieldsToLocalize = GetLocalizableFieldInfos(viewTypeSymbol);
+            var fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(viewTypeSymbol);
+            var methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
+            var observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -437,6 +436,31 @@ namespace ViewsSourceGenerator
                 .Select(field => field.GetAttributes().Single(ad => ad.AttributeClass?.Name == ViewModelMethodCallAttributeTemplate.AttributeName))
                 .Select(ad => ad.ConstructorArguments[0].Value as string)
                 .ToArray();
+
+            return result;
+        }
+        
+        private static bool IsIDisposableImplementedInHandwrittenPart(INamedTypeSymbol viewModelClass)
+        {
+            var disposeMethod = viewModelClass?.GetMembers()
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(method => method.Name == "Dispose" && method.ReturnsVoid && method.DeclaredAccessibility == Accessibility.Public);
+
+            return disposeMethod != null;
+        }
+        
+        private static string GetFullNamespace(INamedTypeSymbol typeSymbol)
+        {
+            INamespaceSymbol namespaceSymbol = typeSymbol.ContainingNamespace;
+            if (namespaceSymbol.IsGlobalNamespace)
+                return string.Empty;
+
+            string result = namespaceSymbol.Name;
+            while (!namespaceSymbol.ContainingNamespace.IsGlobalNamespace)
+            {
+                namespaceSymbol = namespaceSymbol.ContainingNamespace;
+                result = namespaceSymbol.Name + "." + result;
+            }
 
             return result;
         }

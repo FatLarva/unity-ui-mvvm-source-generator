@@ -20,14 +20,12 @@ namespace <#=StaticConstants.AttributesNamespace#>
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public class ViewModelGenerateAttribute : Attribute
     {
-        public string ClassName { get; }
-        public string NamespaceName { get; }
+        public string ViewModelClassName { get; set; }
+        public string ViewModelNamespaceName { get; set; }
         public bool SkipViewModelGeneration { get; set; }
 
-        public ViewModelGenerateAttribute(string className, string namespaceName)
+        public ViewModelGenerateAttribute()
         {
-            ClassName = className;
-            NamespaceName = namespaceName;
         }
     }
 }
