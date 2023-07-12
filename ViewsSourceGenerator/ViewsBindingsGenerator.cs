@@ -117,10 +117,11 @@ namespace ViewsSourceGenerator
 
         private void GenerateViewModel(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName, string viewModelNamespaceName)
         {
-            var methodsToCall = GetMethodsToCall(viewTypeSymbol);
-            var localizationKeys = GetFieldsToLocalize(viewTypeSymbol);
-            var placeholderLocalizationKeys = GetFieldsToLocalizePlaceholders(viewTypeSymbol);
-            var methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
+            string[] methodsToCall = GetMethodsToCall(viewTypeSymbol);
+            string[] localizationKeys = GetFieldsToLocalize(viewTypeSymbol);
+            string[] placeholderLocalizationKeys = GetFieldsToLocalizePlaceholders(viewTypeSymbol);
+            SubscribeOnObservableInfo[] methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
+            ObservableBindingInfo[] observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
 
             INamedTypeSymbol viewModelClass = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
             
@@ -133,6 +134,7 @@ namespace ViewsSourceGenerator
                 localizationKeys,
                 placeholderLocalizationKeys,
                 methodForAutoSubscription,
+                observablesBindings,
                 shouldImplementDisposeInterface);
             
             var classFileName = $"{viewModelClassName}_g.cs";

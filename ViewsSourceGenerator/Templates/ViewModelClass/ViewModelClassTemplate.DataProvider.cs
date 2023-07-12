@@ -15,14 +15,16 @@ namespace ViewsSourceGenerator
         private string[] PlaceholderLocalizationKeys { get; }
 
         private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        
+        private ObservableBindingInfo[] ObservableBindingInfos { get; }
 
         private bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose) || NeedLocalization;
+        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose) || ObservableBindingInfos.Any(info => info.HasObservablesToDispose) || NeedLocalization;
 
-        public bool ShouldImplementDisposeInterface { get; }
+        private bool ShouldImplementDisposeInterface { get; }
 
         internal ViewModelClassTemplate(
             string className,
@@ -31,6 +33,7 @@ namespace ViewsSourceGenerator
             string[] localizationKeys,
             string[] placeholderLocalizationKeys,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
+            ObservableBindingInfo[] observableBindingInfos,
             bool shouldImplementDisposeInterface)
         {
             ClassName = className;
@@ -39,6 +42,7 @@ namespace ViewsSourceGenerator
             LocalizationKeys = localizationKeys;
             PlaceholderLocalizationKeys = placeholderLocalizationKeys;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
+            ObservableBindingInfos = observableBindingInfos;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;
         }
 
