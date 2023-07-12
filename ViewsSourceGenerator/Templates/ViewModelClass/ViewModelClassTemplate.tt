@@ -30,6 +30,11 @@ namespace <#= NamespaceName #>
 		<#=subscribeInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
+<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
+<#		if (bindingInfo.HasPrivateCreations) { #>
+		<#=bindingInfo.GetAutoCreatedObserversPrivatePart()#>
+<#		} #>
+<#  } #>
 <#	foreach (var localizationKey in LocalizationKeys) { #>
 		public readonly ReactiveProperty<string> <#=localizationKey.ToPascalCase()#> = new();
 <#  } #>
@@ -39,6 +44,11 @@ namespace <#= NamespaceName #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.HasPublicCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPublicPart()#>
+<#		} #>
+<#  } #>
+<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
+<#		if (bindingInfo.HasPublicCreations) { #>
+		<#=bindingInfo.GetAutoCreatedObserversPublicPart()#>
 <#		} #>
 <#  } #>
 		
@@ -80,6 +90,11 @@ namespace <#= NamespaceName #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
 			<#=subscribeInfo.GetAutoCreatedObserversDisposePart()#>
+<#		} #>
+<#  } #>
+<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
+<#		if (bindingInfo.HasPrivateCreations) { #>
+			<#=bindingInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var localizationKey in LocalizationKeys) { #>
