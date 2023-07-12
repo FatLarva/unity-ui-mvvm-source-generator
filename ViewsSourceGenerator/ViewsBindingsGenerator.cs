@@ -81,8 +81,8 @@ namespace ViewsSourceGenerator
             INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName(ViewModelGenerateAttributeTemplate.MetaDataName);
             if (attributeSymbol == null)
             {
-                var diagnostic1 = Diagnostic.Create(GetDiagnostic($"Cannot find symbol by MetadataName: {ViewModelGenerateAttributeTemplate.MetaDataName}"), null);
-                context.ReportDiagnostic(diagnostic1);
+                var diagnostic = Diagnostic.Create(GetDiagnostic($"Cannot find symbol by MetadataName: {ViewModelGenerateAttributeTemplate.MetaDataName}"), null);
+                context.ReportDiagnostic(diagnostic);
             }
             
             var attribute = typeSymbol.GetAttributes().Single(
@@ -145,11 +145,11 @@ namespace ViewsSourceGenerator
             var viewClassName = viewTypeSymbol.Name;
             var viewNamespaceName = GetFullNamespace(viewTypeSymbol);
             
-            var methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol);
-            var fieldsToLocalize = GetLocalizableFieldInfos(viewTypeSymbol);
-            var fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(viewTypeSymbol);
-            var methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
-            var observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
+            ButtonMethodCallInfo[] methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol);
+            LocalizableFieldInfo[] fieldsToLocalize = GetLocalizableFieldInfos(viewTypeSymbol);
+            LocalizableFieldInfo[] fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(viewTypeSymbol);
+            SubscribeOnObservableInfo[] methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
+            ObservableBindingInfo[] observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -262,8 +262,10 @@ namespace ViewsSourceGenerator
 
                         var methodName = method.Name;
                         var methodArgumentType = method.Parameters.Any() ? method.Parameters[0].Type.Name : "Unit";
-                    
-                        return new SubscribeOnObservableInfo(methodName, observableName, creationFlags, methodArgumentType);
+
+                        var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                        
+                        return new SubscribeOnObservableInfo(methodName, autoCreationInfo);
                     })
                     .ToArray();
 
@@ -369,12 +371,48 @@ namespace ViewsSourceGenerator
                                     isNegated = true;
                                 }
                                 
-                                return new ObservableBindingInfo(field.Name, observableName, bindingType, isNegated, delaySettings);
+                                if (!TryGetFlagsFromNamedArgument(attribute.NamedArguments, out var creationFlags))
+                                {
+                                    creationFlags = InnerAutoCreationFlag.None;
+                                }
+
+                                var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
+
+                                var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                                
+                                return new ObservableBindingInfo(field.Name, bindingType, isNegated, delaySettings, autoCreationInfo);
                             });
                 })
                 .ToArray();
 
             return result;
+        }
+
+        private string GetObservableTypeFromBindingType(InnerBindingType bindingType)
+        {
+            switch (bindingType)
+            {
+                case InnerBindingType.Text:
+                    return "string";
+                case InnerBindingType.ImageFill:
+                    return "float";
+                case InnerBindingType.GameObjectActivity:
+                    return "bool";
+                case InnerBindingType.Activity:
+                    return "bool";
+                case InnerBindingType.Color:
+                    return "Color";
+                case InnerBindingType.Sprite:
+                    return "Sprite";
+                case InnerBindingType.Enabled:
+                    return "bool";
+                case InnerBindingType.Interactable:
+                    return "bool";
+                case InnerBindingType.Alpha:
+                    return "float";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(bindingType), bindingType, $"Undefined binding type: {bindingType}");
+            }
         }
 
         private string[] GetFieldsToLocalize(INamedTypeSymbol typeSymbol)

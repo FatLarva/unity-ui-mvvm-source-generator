@@ -4,24 +4,40 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct ObservableBindingInfo
     {
-        public readonly string FieldName;
-        public readonly string ObservableName;
-        public readonly InnerBindingType BindingType;
-        public readonly bool IsInversed;
+        private readonly string _fieldName;
+        private readonly InnerBindingType _bindingType;
+        private readonly bool _isInversed;
         private readonly ObservableBindingDelaySettings? _delaySettings;
+        private readonly AutoCreationInfo _autoCreationInfo;
 
-        public ObservableBindingInfo(string fieldName, string observableName, InnerBindingType bindingType, bool isInversed, ObservableBindingDelaySettings? delaySettings)
+        public string ObservableName => _autoCreationInfo.ObservableName;
+
+        public bool HasObservableArgument => _autoCreationInfo.HasObservableArgument;
+
+        public bool HasPrivateCreations => _autoCreationInfo.HasPrivateCreations;
+
+        public bool HasPublicCreations => _autoCreationInfo.HasPublicCreations;
+
+        public bool HasObservablesToDispose => HasPrivateCreations;
+
+        public ObservableBindingInfo(string fieldName, InnerBindingType bindingType, bool isInversed, ObservableBindingDelaySettings? delaySettings, AutoCreationInfo autoCreationInfo)
         {
-            FieldName = fieldName;
-            ObservableName = observableName;
-            BindingType = bindingType;
-            IsInversed = isInversed;
+            _fieldName = fieldName;
+            _bindingType = bindingType;
+            _isInversed = isInversed;
             _delaySettings = delaySettings;
+            _autoCreationInfo = autoCreationInfo;
         }
+        
+        public string GetAutoCreatedObserversPrivatePart() => _autoCreationInfo.GetAutoCreatedObserversPrivatePart();
+
+        public string GetAutoCreatedObserversDisposePart() => _autoCreationInfo.GetAutoCreatedObserversDisposePart();
+
+        public string GetAutoCreatedObserversPublicPart() => _autoCreationInfo.GetAutoCreatedObserversPublicPart();
 
         public string GenerateAssignment(string observedValueName)
         {
-            if (IsInversed)
+            if (_isInversed)
             {
                 return GenerateInversedAssignment(observedValueName);
             }
@@ -33,26 +49,26 @@ namespace ViewsSourceGenerator
         
         private string GenerateInversedAssignment(string observedValueName)
         {
-            switch (BindingType)
+            switch (_bindingType)
             {
                 case InnerBindingType.Text:
-                    return $"{FieldName}.text = {observedValueName}";
+                    return $"{_fieldName}.text = {observedValueName}";
                 case InnerBindingType.ImageFill:
-                    return $"{FieldName}.fillAmount = 1 - {observedValueName}";
+                    return $"{_fieldName}.fillAmount = 1 - {observedValueName}";
                 case InnerBindingType.GameObjectActivity:
-                    return $"{FieldName}.gameObject.SetActive(!{observedValueName})";
+                    return $"{_fieldName}.gameObject.SetActive(!{observedValueName})";
                 case InnerBindingType.Activity:
-                    return $"{FieldName}.SetActive(!{observedValueName})";
+                    return $"{_fieldName}.SetActive(!{observedValueName})";
                 case InnerBindingType.Color:
-                    return $"{FieldName}.color = {observedValueName}";
+                    return $"{_fieldName}.color = {observedValueName}";
                 case InnerBindingType.Sprite:
-                    return $"{FieldName}.sprite = {observedValueName}";
+                    return $"{_fieldName}.sprite = {observedValueName}";
                 case InnerBindingType.Enabled:
-                    return $"{FieldName}.enabled = !{observedValueName}";
+                    return $"{_fieldName}.enabled = !{observedValueName}";
                 case InnerBindingType.Interactable:
-                    return $"{FieldName}.interactable = !{observedValueName}";
+                    return $"{_fieldName}.interactable = !{observedValueName}";
                 case InnerBindingType.Alpha:
-                    return $"{FieldName}.alpha = 1 - {observedValueName}";
+                    return $"{_fieldName}.alpha = 1 - {observedValueName}";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -60,26 +76,26 @@ namespace ViewsSourceGenerator
         
         private string GenerateStraightAssignment(string observedValueName)
         {
-            switch (BindingType)
+            switch (_bindingType)
             {
                 case InnerBindingType.Text:
-                    return $"{FieldName}.text = {observedValueName}";
+                    return $"{_fieldName}.text = {observedValueName}";
                 case InnerBindingType.ImageFill:
-                    return $"{FieldName}.fillAmount = {observedValueName}";
+                    return $"{_fieldName}.fillAmount = {observedValueName}";
                 case InnerBindingType.GameObjectActivity:
-                    return $"{FieldName}.gameObject.SetActive({observedValueName})";
+                    return $"{_fieldName}.gameObject.SetActive({observedValueName})";
                 case InnerBindingType.Activity:
-                    return $"{FieldName}.SetActive({observedValueName})";
+                    return $"{_fieldName}.SetActive({observedValueName})";
                 case InnerBindingType.Color:
-                    return $"{FieldName}.color = {observedValueName}";
+                    return $"{_fieldName}.color = {observedValueName}";
                 case InnerBindingType.Sprite:
-                    return $"{FieldName}.sprite = {observedValueName}";
+                    return $"{_fieldName}.sprite = {observedValueName}";
                 case InnerBindingType.Enabled:
-                    return $"{FieldName}.enabled = {observedValueName}";
+                    return $"{_fieldName}.enabled = {observedValueName}";
                 case InnerBindingType.Interactable:
-                    return $"{FieldName}.interactable = {observedValueName}";
+                    return $"{_fieldName}.interactable = {observedValueName}";
                 case InnerBindingType.Alpha:
-                    return $"{FieldName}.alpha = {observedValueName}";
+                    return $"{_fieldName}.alpha = {observedValueName}";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
