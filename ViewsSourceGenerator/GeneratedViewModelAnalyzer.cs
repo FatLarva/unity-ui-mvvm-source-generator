@@ -16,18 +16,24 @@ namespace ViewsSourceGenerator
         
         private const string HandlingAutoBindingsMethodName = "HandleAutoBindings";
         private const string HandlingAutoDisposeMethodName = "HandleAutoDispose";
+        private const string LifetimeDisposableName = "_lifetimeDisposable";
+        private const string DisposeMethodName = "Dispose";
         
-        private static readonly LocalizableString AutoBindingsRuleTitle = "HandleAutoBindings method should be called during constructor.";
-        private static readonly LocalizableString AutoBindingsRuleMessageFormat = "HandleAutoBindings method should be called during constructor.";
-        private static readonly LocalizableString AutoBindingsRuleDescription = "HandleAutoBindings method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleTitle = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleMessageFormat = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleDescription = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
         
-        private static readonly LocalizableString AutoDisposeNotCalledTitle = "HandleAutoDispose method should be called during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeNotCalledMessageFormat = "HandleAutoDispose method should be called during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeNotCalledDescription = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledTitle = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledMessageFormat = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledDescription = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
         
-        private static readonly LocalizableString AutoDisposeMoreThanOnceTitle = "HandleAutoDispose method should be called only once during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeMoreThanOnceMessageFormat = "HandleAutoDispose method should be called only once during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeMoreThanOnceDescription = "HandleAutoDispose method should be called only once during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeMoreThanOnceTitle = $"{HandlingAutoDisposeMethodName} method should be called only once during {DisposeMethodName}() method.";
+        private static readonly LocalizableString AutoDisposeMoreThanOnceMessageFormat = $"{HandlingAutoDisposeMethodName} method should be called only once during {DisposeMethodName}() method.";
+        private static readonly LocalizableString AutoDisposeMoreThanOnceDescription = $"{HandlingAutoDisposeMethodName} method should be called only once during {DisposeMethodName}() method.";
+        
+        private static readonly LocalizableString LifetimeDisposableDirectDisposeTitle = $"{LifetimeDisposableName}.{DisposeMethodName}() should not be called directly. Call {HandlingAutoDisposeMethodName}() instead.";
+        private static readonly LocalizableString LifetimeDisposableDirectDisposeMessageFormat = $"{LifetimeDisposableName}.{DisposeMethodName}() should not be called directly. Call {HandlingAutoDisposeMethodName}() instead.";
+        private static readonly LocalizableString LifetimeDisposableDirectDisposeDescription = $"{LifetimeDisposableName}.{DisposeMethodName}() should not be called directly. Call {HandlingAutoDisposeMethodName}() instead.";
 
         private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription, helpLinkUri: HelpLinkUri);
@@ -37,9 +43,11 @@ namespace ViewsSourceGenerator
         
         private static readonly DiagnosticDescriptor AutoDisposeCalledMoreThanOnceRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeMoreThanOnceTitle, AutoDisposeMoreThanOnceMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeMoreThanOnceDescription, helpLinkUri: HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor LifetimeDisposableDirectDisposeRule = new DiagnosticDescriptor(DiagnosticId, LifetimeDisposableDirectDisposeTitle, LifetimeDisposableDirectDisposeMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: LifetimeDisposableDirectDisposeDescription, helpLinkUri: HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeNotCalledRule, AutoDisposeCalledMoreThanOnceRule);
-
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeNotCalledRule, AutoDisposeCalledMoreThanOnceRule, LifetimeDisposableDirectDisposeRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -64,6 +72,36 @@ namespace ViewsSourceGenerator
 
                 ReportNotCallingHandleAutoBindingsInConstructor(context, classNode, classDeclarationSyntax);
                 ReportNotCallingHandleAutoDisposeInDispose(context, classNode);
+                ReportDirectlyCallingDisposeOnLifetimeDisposable(context, classNode);
+            }
+        }
+
+        private void ReportDirectlyCallingDisposeOnLifetimeDisposable(SyntaxNodeAnalysisContext context, SyntaxNode classNode)
+        {
+            var disposeMethodSyntax = classNode
+                .ChildNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(
+                    method =>
+                    {
+                        bool isDisposeImplementation = method.Modifiers.Any(SyntaxKind.PublicKeyword);
+                        isDisposeImplementation &= method.ReturnType is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword);
+                        isDisposeImplementation &= method.ParameterList.Parameters.Count == 0;
+                        isDisposeImplementation &= method.Identifier.Text == DisposeMethodName;
+
+                        return isDisposeImplementation;
+                    })
+                .FirstOrDefault();
+            
+            if (disposeMethodSyntax == null)
+            {
+                return;
+            }
+
+            if (IsDisposeCalledOnLifetimeDisposable(disposeMethodSyntax, out Location location))
+            {
+                var diagnostic = Diagnostic.Create(LifetimeDisposableDirectDisposeRule, location);
+                context.ReportDiagnostic(diagnostic);
             }
         }
 
@@ -113,7 +151,7 @@ namespace ViewsSourceGenerator
                         bool isDisposeImplementation = method.Modifiers.Any(SyntaxKind.PublicKeyword);
                         isDisposeImplementation &= method.ReturnType is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword);
                         isDisposeImplementation &= method.ParameterList.Parameters.Count == 0;
-                        isDisposeImplementation &= method.Identifier.Text == "Dispose";
+                        isDisposeImplementation &= method.Identifier.Text == DisposeMethodName;
 
                         return isDisposeImplementation;
                     })
@@ -218,6 +256,22 @@ namespace ViewsSourceGenerator
                 return true;
             }
 
+            return false;
+        }
+        
+        private static bool IsDisposeCalledOnLifetimeDisposable(MethodDeclarationSyntax methodSyntax, out Location location)
+        {
+            foreach (var invocation in methodSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+            {
+                if (invocation.Expression is MemberAccessExpressionSyntax { Name: { Identifier: { Text: DisposeMethodName } } } memberAccess &&
+                    memberAccess.Expression is IdentifierNameSyntax { Identifier: { Text: LifetimeDisposableName } })
+                {
+                    location = memberAccess.GetLocation();
+                    return true;
+                }
+            }
+
+            location = null;
             return false;
         }
     }
