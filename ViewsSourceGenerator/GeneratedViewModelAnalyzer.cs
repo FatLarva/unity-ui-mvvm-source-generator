@@ -19,9 +19,9 @@ namespace ViewsSourceGenerator
         private const string LifetimeDisposableName = "_lifetimeDisposable";
         private const string DisposeMethodName = "Dispose";
         
-        private static readonly LocalizableString AutoBindingsRuleTitle = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
-        private static readonly LocalizableString AutoBindingsRuleMessageFormat = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
-        private static readonly LocalizableString AutoBindingsRuleDescription = $"{HandlingAutoBindingsMethodName} method should be called during constructor.";
+        private static readonly LocalizableString AutoBindingsRuleTitle = $"{HandlingAutoBindingsMethodName} method should be called during constructor. And it should be called only once.";
+        private static readonly LocalizableString AutoBindingsRuleMessageFormat = $"{HandlingAutoBindingsMethodName} method should be called during constructor. And it should be called only once.";
+        private static readonly LocalizableString AutoBindingsRuleDescription = $"{HandlingAutoBindingsMethodName} method should be called during constructor. And it should be called only once.";
         
         private static readonly LocalizableString AutoDisposeNotCalledTitle = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
         private static readonly LocalizableString AutoDisposeNotCalledMessageFormat = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
@@ -117,27 +117,45 @@ namespace ViewsSourceGenerator
 
             foreach (var constructorDeclarationSyntax in constructors)
             {
-                foreach (var expressionSyntax in constructorDeclarationSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+                var handleAutoBindingsCalls = constructorDeclarationSyntax.DescendantNodesAndSelf()
+                    .OfType<InvocationExpressionSyntax>()
+                    .Where(
+                        invocationExpressionSyntax =>
+                        {
+                            if (!IsInvocationOfThisObjectsMethod(invocationExpressionSyntax))
+                            {
+                                return false;
+                            }
+
+                            if (context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                            {
+                                return false;
+                            }
+
+                            return methodSymbol.Name == HandlingAutoBindingsMethodName;
+                        }
+                    )
+                    .ToArray();
+                
+                if (handleAutoBindingsCalls.Length == 1)
                 {
-                    if (!IsInvocationOfThisObjectsMethod(expressionSyntax))
-                    {
-                        continue;
-                    }
+                    return;
+                }
 
-                    if (context.SemanticModel.GetSymbolInfo(expressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                if (handleAutoBindingsCalls.Length == 0)
+                {
+                    var diagnostic = Diagnostic.Create(AutoBindingsRule, constructorDeclarationSyntax.GetLocation());
+                    context.ReportDiagnostic(diagnostic);
+                }
+                else
+                {
+                    foreach (var invocationSyntax in handleAutoBindingsCalls)
                     {
-                        continue;
-                    }
-
-                    if (methodSymbol.Name == HandlingAutoBindingsMethodName)
-                    {
-                        return;
+                        var diagnostic = Diagnostic.Create(AutoBindingsRule, invocationSyntax.GetLocation());
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
-
-            var diagnostic = Diagnostic.Create(AutoBindingsRule, constructors.First().GetLocation());
-            context.ReportDiagnostic(diagnostic);
         }
         
         private static void ReportNotCallingHandleAutoDisposeInDispose(SyntaxNodeAnalysisContext context, SyntaxNode classNode)
