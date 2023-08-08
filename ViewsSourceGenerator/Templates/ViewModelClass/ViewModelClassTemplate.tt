@@ -121,14 +121,30 @@ namespace <#= NamespaceName #>
 
 		private void ApplyLocalization(ILocalizationProvider localizationProvider)
 		{
+			try
+			{
 <#	foreach (var localizationKey in LocalizationKeys) { #>
-			<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
+				<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
 <#  } #>
 <#	foreach (var localizationKey in PlaceholderLocalizationKeys) { #>
-			<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
+				<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
 <#  } #>
+			}
+			catch(Exception exception)
+			{
+				Debug.LogError("Exception thrown during auto-localization.");
+				Debug.LogException(exception);
+			}
 			
-			ManualLocalization(localizationProvider);
+			try
+			{
+				ManualLocalization(localizationProvider);
+			}
+			catch(Exception exception)
+			{
+				Debug.LogError("Exception thrown during manual-localization.");
+				Debug.LogException(exception);
+			}
 		}
 
 		partial void ManualLocalization(ILocalizationProvider localizationProvider);
