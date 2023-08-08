@@ -21,17 +21,24 @@ namespace ViewsSourceGenerator
         private static readonly LocalizableString AutoBindingsRuleMessageFormat = "HandleAutoBindings method should be called during constructor.";
         private static readonly LocalizableString AutoBindingsRuleDescription = "HandleAutoBindings method should be called during constructor.";
         
-        private static readonly LocalizableString AutoDisposeTitle = "HandleAutoDispose method should be called during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeMessageFormat = "HandleAutoDispose method should be called during Dispose() method.";
-        private static readonly LocalizableString AutoDisposeDescription = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledTitle = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledMessageFormat = "HandleAutoDispose method should be called during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeNotCalledDescription = "HandleAutoDispose method should be called during Dispose() method.";
+        
+        private static readonly LocalizableString AutoDisposeMoreThanOnceTitle = "HandleAutoDispose method should be called only once during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeMoreThanOnceMessageFormat = "HandleAutoDispose method should be called only once during Dispose() method.";
+        private static readonly LocalizableString AutoDisposeMoreThanOnceDescription = "HandleAutoDispose method should be called only once during Dispose() method.";
 
         private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription, helpLinkUri: HelpLinkUri);
         
-        private static readonly DiagnosticDescriptor AutoDisposeRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeTitle, AutoDisposeMessageFormat,
-            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeDescription, helpLinkUri: HelpLinkUri);
+        private static readonly DiagnosticDescriptor AutoDisposeNotCalledRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeNotCalledTitle, AutoDisposeNotCalledMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeNotCalledDescription, helpLinkUri: HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor AutoDisposeCalledMoreThanOnceRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeMoreThanOnceTitle, AutoDisposeMoreThanOnceMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeMoreThanOnceDescription, helpLinkUri: HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeNotCalledRule, AutoDisposeCalledMoreThanOnceRule);
 
 
         public override void Initialize(AnalysisContext context)
@@ -116,27 +123,46 @@ namespace ViewsSourceGenerator
             {
                 return;
             }
-            
-            foreach (var expressionSyntax in disposeMethodSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+
+            var callsToHandleAutoDispose = disposeMethodSyntax
+                .DescendantNodesAndSelf()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(
+                    invocationExpressionSyntax =>
+                    {
+                        if (!IsInvocationOfThisObjectsMethod(invocationExpressionSyntax))
+                        {
+                            return false;
+                        }
+
+                        if (context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                        {
+                            return false;
+                        }
+
+                        return methodSymbol.Name == HandlingAutoDisposeMethodName;
+                    }
+                )
+                .ToArray();
+
+            if (callsToHandleAutoDispose.Length == 1)
             {
-                if (!IsInvocationOfThisObjectsMethod(expressionSyntax))
-                {
-                    continue;
-                }
+                return;
+            }
 
-                if (context.SemanticModel.GetSymbolInfo(expressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+            if (callsToHandleAutoDispose.Length == 0)
+            {
+                var diagnostic = Diagnostic.Create(AutoDisposeNotCalledRule, disposeMethodSyntax.GetLocation());
+                context.ReportDiagnostic(diagnostic);
+            }
+            else
+            {
+                foreach (var invocationSyntax in callsToHandleAutoDispose)
                 {
-                    continue;
-                }
-
-                if (methodSymbol.Name == HandlingAutoDisposeMethodName)
-                {
-                    return;
+                    var diagnostic = Diagnostic.Create(AutoDisposeCalledMoreThanOnceRule, invocationSyntax.GetLocation());
+                    context.ReportDiagnostic(diagnostic);
                 }
             }
-            
-            var diagnostic = Diagnostic.Create(AutoDisposeRule, disposeMethodSyntax.GetLocation());
-            context.ReportDiagnostic(diagnostic);
         }
 
         private static SyntaxNode GetHandwrittenPartOfClass(ITypeSymbol classSymbol)
