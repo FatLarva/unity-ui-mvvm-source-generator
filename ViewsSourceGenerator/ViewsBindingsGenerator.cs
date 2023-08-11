@@ -195,6 +195,11 @@ namespace ViewsSourceGenerator
                         .Select(
                             attribute =>
                             {
+                                if (TryGetNamedArgumentValue(attribute.NamedArguments, "UseSameViewModel", out bool useSameViewModel) && useSameViewModel)
+                                {
+                                    return new SubViewInfo(field.Name, true);
+                                }
+                                
                                 if (!TryGetNamedArgumentValue(attribute.NamedArguments, "SubViewModelFieldName", out string viewModelFieldName))
                                 {
                                     viewModelFieldName = field.Type.Name + "Model";

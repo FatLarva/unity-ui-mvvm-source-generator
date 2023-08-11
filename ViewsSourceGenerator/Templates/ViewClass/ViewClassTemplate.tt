@@ -41,7 +41,11 @@ namespace <#= NamespaceName #>
 			_oneInitDisposable = new CompositeDisposable();
 
 <#	foreach (var subViewInfo in SubViewInfos) { #>
+<#		if (subViewInfo.UseSameViewModel) { #>
+			<#=subViewInfo.ViewFieldName#>.Init(model);
+<#      } else { #>
 			<#=subViewInfo.ViewFieldName#>.Init(model.<#=subViewInfo.ViewModelFieldName#>);
+<#      } #>
 <#  } #>
 
 <#	foreach (var observableBindingInfo in ObservableBindingInfos) { #>
@@ -63,7 +67,7 @@ namespace <#= NamespaceName #>
 <#	foreach (var info in SubscribeOnObservableInfos) { #>
 <#		if (info.HasObservableArgument) { #>
 			model.<#=info.ObservableName#>.Subscribe(<#=info.MethodName#>).AddTo(_oneInitDisposable);
-<#      } else {#>
+<#      } else { #>
 			model.<#=info.ObservableName#>.Subscribe(_ => <#=info.MethodName#>()).AddTo(_oneInitDisposable);
 <#      } #>
 <#  } #>
