@@ -45,6 +45,7 @@ namespace ViewsSourceGenerator
             context.AddSource(BindingTypeEnumTemplate.SourceFileName, new BindingTypeEnumTemplate().TransformText());
             context.AddSource(AutoCreationFlagEnumTemplate.SourceFileName, new AutoCreationFlagEnumTemplate().TransformText());
             context.AddSource(GeneratedViewModelAttributeTemplate.SourceFileName, new GeneratedViewModelAttributeTemplate().TransformText());
+            context.AddSource(SubViewAttributeTemplate.SourceFileName, new SubViewAttributeTemplate().TransformText());
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -152,6 +153,7 @@ namespace ViewsSourceGenerator
             LocalizableFieldInfo[] fieldsToLocalizePlaceholders = GetLocalizablePlaceholdersFieldInfos(viewTypeSymbol);
             SubscribeOnObservableInfo[] methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
             ObservableBindingInfo[] observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
+            SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -161,13 +163,49 @@ namespace ViewsSourceGenerator
                 fieldsToLocalize,
                 fieldsToLocalizePlaceholders,
                 methodForAutoSubscription,
-                observablesBindings);
+                observablesBindings,
+                subViewInfos);
             var classFileName = $"{viewClassName}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
             
             /*var diagnostic = Diagnostic.Create(GetDiagnostic($"So far so good: {viewClassName}  {viewNamespaceName}"), null);
             context.ReportDiagnostic(diagnostic);*/
+        }
+
+        private SubViewInfo[] GetSubViewInfos(INamedTypeSymbol typeSymbol)
+        {
+            List<IFieldSymbol> fieldsWithAttribute = typeSymbol
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .Where(f => f.GetAttributes().Any(ad => ad.AttributeClass?.Name == SubViewAttributeTemplate.AttributeName))
+                .ToList();
+            
+            if (fieldsWithAttribute.Count == 0)
+            {
+                return Array.Empty<SubViewInfo>();
+            }
+            
+            var result = fieldsWithAttribute
+                .SelectMany(field =>
+                {
+                    var subViewAttributes = field.GetAttributes().Where(ad => ad.AttributeClass?.Name == SubViewAttributeTemplate.AttributeName);
+
+                    return subViewAttributes
+                        .Select(
+                            attribute =>
+                            {
+                                if (!TryGetNamedArgumentValue(attribute.NamedArguments, "SubViewModelFieldName", out string viewModelFieldName))
+                                {
+                                    viewModelFieldName = field.Type.Name + "Model";
+                                }
+                                
+                                return new SubViewInfo(field.Name, viewModelFieldName);
+                            });
+                })
+                .ToArray();
+
+            return result;
         }
 
         private LocalizableFieldInfo[] GetLocalizableFieldInfos(INamedTypeSymbol typeSymbol)
