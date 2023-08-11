@@ -2,33 +2,35 @@
 {
     internal partial class ViewClassTemplate
     {
-        internal string ClassName { get; }
+        private string ClassName { get; }
         
-        internal string ViewModelClassName { get; }
+        private string ViewModelClassName { get; }
 
-        internal string NamespaceName { get; }
+        private string NamespaceName { get; }
 
-        internal ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
+        private ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
         
-        internal LocalizableFieldInfo[] LocalizableFieldInfos { get; }
+        private LocalizableFieldInfo[] LocalizableFieldInfos { get; }
         
-        internal LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
+        private LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
 
-        internal SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+        private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
+
+        private ObservableBindingInfo[] ObservableBindingInfos { get; }
         
-        internal ObservableBindingInfo[] ObservableBindingInfos { get; }
+        private SubViewInfo[] SubViewInfos { get; }
 
-        internal bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
+        private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        internal ViewClassTemplate(
-            string className,
+        internal ViewClassTemplate(string className,
             string viewModelClassName,
             string namespaceName,
             ButtonMethodCallInfo[] buttonMethodCallInfo,
             LocalizableFieldInfo[] localizableFieldInfos,
             LocalizableFieldInfo[] localizablePlaceholdersFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
-            ObservableBindingInfo[] observableBindingInfos)
+            ObservableBindingInfo[] observableBindingInfos,
+            SubViewInfo[] subViewInfos)
         {
             ClassName = className;
             ViewModelClassName = viewModelClassName;
@@ -38,6 +40,7 @@
             LocalizablePlaceholderFieldInfos = localizablePlaceholdersFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
+            SubViewInfos = subViewInfos;
         }
     }
 }
