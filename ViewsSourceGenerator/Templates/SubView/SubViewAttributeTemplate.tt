@@ -21,6 +21,7 @@ namespace <#=StaticConstants.AttributesNamespace#>
     public class SubViewAttribute : Attribute
     {
         public string SubViewModelFieldName { get; set; }
+        public bool UseSameViewModel { get; set; }
 
         public SubViewAttribute()
         {
