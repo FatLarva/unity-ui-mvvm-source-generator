@@ -8,17 +8,17 @@ namespace ViewsSourceGenerator
 
         private string NamespaceName { get; }
 
-        private string[] MethodsToCall { get; }
+        private ButtonMethodCallInfo[] ButtonMethodCallInfos { get; }
 
-        private string[] LocalizationKeys { get; }
+        private LocalizableFieldInfo[] LocalizationFieldInfos { get; }
 
-        private string[] PlaceholderLocalizationKeys { get; }
+        private LocalizableFieldInfo[] PlaceholderLocalizationFieldInfos { get; }
 
         private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
         
         private ObservableBindingInfo[] ObservableBindingInfos { get; }
 
-        private bool NeedLocalization => LocalizationKeys.Length > 0 || PlaceholderLocalizationKeys.Length > 0;
+        private bool NeedLocalization => LocalizationFieldInfos.Length > 0 || PlaceholderLocalizationFieldInfos.Length > 0;
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -29,18 +29,18 @@ namespace ViewsSourceGenerator
         internal ViewModelClassTemplate(
             string className,
             string namespaceName,
-            string[] methodsToCall,
-            string[] localizationKeys,
-            string[] placeholderLocalizationKeys,
+            ButtonMethodCallInfo[] buttonMethodCallInfos,
+            LocalizableFieldInfo[] localizationFieldInfos,
+            LocalizableFieldInfo[] placeholderLocalizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
             bool shouldImplementDisposeInterface)
         {
             ClassName = className;
             NamespaceName = namespaceName;
-            MethodsToCall = methodsToCall;
-            LocalizationKeys = localizationKeys;
-            PlaceholderLocalizationKeys = placeholderLocalizationKeys;
+            ButtonMethodCallInfos = buttonMethodCallInfos;
+            LocalizationFieldInfos = localizationFieldInfos;
+            PlaceholderLocalizationFieldInfos = placeholderLocalizationFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;

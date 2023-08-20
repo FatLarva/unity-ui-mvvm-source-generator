@@ -36,11 +36,11 @@ namespace <#= NamespaceName #>
 		<#=bindingInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
-<#	foreach (var localizationKey in LocalizationKeys) { #>
-		public readonly ReactiveProperty<string> <#=localizationKey.ToPascalCase()#> = new();
+<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
-<#	foreach (var localizationKey in PlaceholderLocalizationKeys) { #>
-		public readonly ReactiveProperty<string> <#=localizationKey.ToPascalCase()#> = new();
+<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
+		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.HasPublicCreations) { #>
@@ -76,13 +76,16 @@ namespace <#= NamespaceName #>
 		{
 			_lifetimeDisposable.Dispose();
 		}
-<#	foreach (var methodName in MethodsToCall) { #>
+<#	foreach (var buttonMethodCallInfo in ButtonMethodCallInfos) { #>
+	<# if (buttonMethodCallInfo.ShouldGenerateMethodWithPartialStuff) { #>
 
-        public void <#= methodName #>()
+        public void <#= buttonMethodCallInfo.MethodToCall #>()
         {
-            On<#= methodName #>();
+            On<#= buttonMethodCallInfo.MethodToCall #>();
         }
-		partial void On<#= methodName #>();
+		partial void On<#= buttonMethodCallInfo.MethodToCall #>();
+	<# } #>
+
 <#  } #>
 
 <# if (HasObservablesToDispose) { #>
@@ -98,11 +101,11 @@ namespace <#= NamespaceName #>
 			<#=bindingInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
-<#	foreach (var localizationKey in LocalizationKeys) { #>
-			<#=localizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
+<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+			<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
 <#  } #>
-<#	foreach (var localizationPlaceholderKey in PlaceholderLocalizationKeys) { #>
-			<#=localizationPlaceholderKey.ToPascalCase()#>.AddTo(compositeDisposable);
+<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
+			<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
 <#  } #>
 		}
 <# } #>
@@ -123,11 +126,11 @@ namespace <#= NamespaceName #>
 		{
 			try
 			{
-<#	foreach (var localizationKey in LocalizationKeys) { #>
-				<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
+<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizableFieldInfo.LocalizationKey #>");
 <#  } #>
-<#	foreach (var localizationKey in PlaceholderLocalizationKeys) { #>
-				<#= localizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizationKey #>");
+<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
+				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizableFieldInfo.LocalizationKey #>");
 <#  } #>
 			}
 			catch(Exception exception)
