@@ -10,10 +10,8 @@
 
         private ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
         
-        private LocalizableFieldInfo[] LocalizableFieldInfos { get; }
+        private LocalizableFieldInfo[] LocalizationFieldInfos { get; }
         
-        private LocalizableFieldInfo[] LocalizablePlaceholderFieldInfos { get; }
-
         private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
 
         private ObservableBindingInfo[] ObservableBindingInfos { get; }
@@ -22,12 +20,12 @@
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        internal ViewClassTemplate(string className,
+        internal ViewClassTemplate(
+            string className,
             string viewModelClassName,
             string namespaceName,
             ButtonMethodCallInfo[] buttonMethodCallInfo,
-            LocalizableFieldInfo[] localizableFieldInfos,
-            LocalizableFieldInfo[] localizablePlaceholdersFieldInfos,
+            LocalizableFieldInfo[] localizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
             SubViewInfo[] subViewInfos)
@@ -36,8 +34,7 @@
             ViewModelClassName = viewModelClassName;
             NamespaceName = namespaceName;
             ButtonMethodCallInfo = buttonMethodCallInfo;
-            LocalizableFieldInfos = localizableFieldInfos;
-            LocalizablePlaceholderFieldInfos = localizablePlaceholdersFieldInfos;
+            LocalizationFieldInfos = localizationFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
             SubViewInfos = subViewInfos;

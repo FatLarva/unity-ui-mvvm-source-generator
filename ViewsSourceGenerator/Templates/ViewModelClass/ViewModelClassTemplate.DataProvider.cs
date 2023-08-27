@@ -12,13 +12,11 @@ namespace ViewsSourceGenerator
 
         private LocalizableFieldInfo[] LocalizationFieldInfos { get; }
 
-        private LocalizableFieldInfo[] PlaceholderLocalizationFieldInfos { get; }
-
         private SubscribeOnObservableInfo[] SubscribeOnObservableInfos { get; }
         
         private ObservableBindingInfo[] ObservableBindingInfos { get; }
 
-        private bool NeedLocalization => LocalizationFieldInfos.Length > 0 || PlaceholderLocalizationFieldInfos.Length > 0;
+        private bool NeedLocalization => LocalizationFieldInfos.Length > 0;
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -31,7 +29,6 @@ namespace ViewsSourceGenerator
             string namespaceName,
             ButtonMethodCallInfo[] buttonMethodCallInfos,
             LocalizableFieldInfo[] localizationFieldInfos,
-            LocalizableFieldInfo[] placeholderLocalizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
             bool shouldImplementDisposeInterface)
@@ -40,7 +37,6 @@ namespace ViewsSourceGenerator
             NamespaceName = namespaceName;
             ButtonMethodCallInfos = buttonMethodCallInfos;
             LocalizationFieldInfos = localizationFieldInfos;
-            PlaceholderLocalizationFieldInfos = placeholderLocalizationFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;

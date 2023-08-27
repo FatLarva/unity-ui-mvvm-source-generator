@@ -18,13 +18,14 @@ using System;
 namespace <#=StaticConstants.AttributesNamespace#>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public class LocalizePlaceholderWithKeyAttribute : Attribute
+    public class LocalizeWithKeyFromFieldAttribute : Attribute
     {
-        public string LocalizationKey { get; }
+        public string LocalizationKeyProvidingFieldName { get; }
+        public bool IsLocalizePlaceholder { get; set; }
 
-        public LocalizePlaceholderWithKeyAttribute(string localizationKey)
+        public LocalizeWithKeyFromFieldAttribute(string localizationKeyProvidingFieldName)
         {
-            LocalizationKey = localizationKey;
+            LocalizationKeyProvidingFieldName = localizationKeyProvidingFieldName;
         }
     }
 }

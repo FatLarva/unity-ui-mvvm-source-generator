@@ -42,7 +42,7 @@ namespace ViewsSourceGenerator
             context.AddSource(ViewModelMethodCallAttributeTemplate.SourceFileName, new ViewModelMethodCallAttributeTemplate().TransformText());
             context.AddSource(ViewModelGenerateAttributeTemplate.SourceFileName, new ViewModelGenerateAttributeTemplate().TransformText());
             context.AddSource(LocalizeWithKeyAttributeTemplate.SourceFileName, new LocalizeWithKeyAttributeTemplate().TransformText());
-            context.AddSource(LocalizePlaceholderWithKeyAttributeTemplate.SourceFileName, new LocalizePlaceholderWithKeyAttributeTemplate().TransformText());
+            context.AddSource(LocalizeWithKeyFromFieldAttributeTemplate.SourceFileName, new LocalizeWithKeyFromFieldAttributeTemplate().TransformText());
             context.AddSource(SubscribeOnViewModelsObservableAttributeTemplate.SourceFileName, new SubscribeOnViewModelsObservableAttributeTemplate().TransformText());
             context.AddSource(BindToObservableAttributeTemplate.SourceFileName, new BindToObservableAttributeTemplate().TransformText());
             context.AddSource(BindingTypeEnumTemplate.SourceFileName, new BindingTypeEnumTemplate().TransformText());
@@ -115,7 +115,7 @@ namespace ViewsSourceGenerator
             INamedTypeSymbol viewModelTypeSymbol = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
             ButtonMethodCallInfo[] methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol, viewModelTypeSymbol);
             LocalizableFieldInfo[] localizationFieldInfos = GetLocalizableFieldInfos(viewTypeSymbol);
-            LocalizableFieldInfo[] placeholderLocalizationFieldInfos = GetLocalizablePlaceholdersFieldInfos(viewTypeSymbol);
+            LocalizableFieldInfo[] localizableByKeyFromFieldInfos = GetLocalizableByKeyFromFieldInfos(viewTypeSymbol);
             SubscribeOnObservableInfo[] methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
             ObservableBindingInfo[] observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
 
@@ -126,7 +126,7 @@ namespace ViewsSourceGenerator
                 viewModelTypeSymbol,
                 methodsToCall,
                 localizationFieldInfos,
-                placeholderLocalizationFieldInfos,
+                localizableByKeyFromFieldInfos,
                 methodForAutoSubscription,
                 observablesBindings);
         }
@@ -135,12 +135,15 @@ namespace ViewsSourceGenerator
         {
             bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(commonInfo.ViewModelTypeSymbol);
             
+            LocalizableFieldInfo[] localizationInfos = commonInfo.LocalizationFieldInfos
+                .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
+                .ToArray();
+            
             var classTemplate = new ViewModelClassTemplate(
                 commonInfo.ViewModelClassName,
                 commonInfo.ViewModelNamespaceName,
                 commonInfo.MethodsToCall,
-                commonInfo.LocalizationFieldInfos,
-                commonInfo.PlaceholderLocalizationFieldInfos,
+                localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
                 shouldImplementDisposeInterface);
@@ -155,7 +158,10 @@ namespace ViewsSourceGenerator
             var viewTypeSymbol = commonInfo.ViewTypeSymbol; 
             var viewClassName = viewTypeSymbol.Name;
             var viewNamespaceName = GetFullNamespace(viewTypeSymbol);
-            
+
+            LocalizableFieldInfo[] localizationInfos = commonInfo.LocalizationFieldInfos
+                .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
+                .ToArray();
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
             
             var classTemplate = new ViewClassTemplate(
@@ -163,8 +169,7 @@ namespace ViewsSourceGenerator
                 commonInfo.ViewModelClassName,
                 viewNamespaceName,
                 commonInfo.MethodsToCall,
-                commonInfo.LocalizationFieldInfos,
-                commonInfo.PlaceholderLocalizationFieldInfos,
+                localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
                 subViewInfos);
@@ -210,20 +215,20 @@ namespace ViewsSourceGenerator
 
         private LocalizableFieldInfo[] GetLocalizableFieldInfos(INamedTypeSymbol typeSymbol)
         {
-            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyAttributeTemplate.AttributeName);
+            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyAttributeTemplate.AttributeName, false);
         }
         
-        private LocalizableFieldInfo[] GetLocalizablePlaceholdersFieldInfos(INamedTypeSymbol typeSymbol)
+        private LocalizableFieldInfo[] GetLocalizableByKeyFromFieldInfos(INamedTypeSymbol typeSymbol)
         {
-            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizePlaceholderWithKeyAttributeTemplate.AttributeName);
+            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyFromFieldAttributeTemplate.AttributeName, true);
         }
 
-        private static LocalizableFieldInfo[] GetLocalizableFieldsInfosByAttributeName(INamedTypeSymbol typeSymbol, string attributeName)
+        private static LocalizableFieldInfo[] GetLocalizableFieldsInfosByAttributeName(INamedTypeSymbol typeSymbol, string attributeName, bool isFromField)
         {
             LocalizableFieldInfo[] result = typeSymbol
                 .GetMembers()
                 .OfType<IFieldSymbol>()
-                .SelectWhere((fieldSymbol, attrName) =>
+                .SelectWhere((fieldSymbol, attrName, isField) =>
                 {
                     var attributeData = GetSingleAttributeData(attrName, fieldSymbol);
 
@@ -234,9 +239,14 @@ namespace ViewsSourceGenerator
 
                     var localizationKey = attributeData.ConstructorArguments[0].Value as string;
                     var fieldName = fieldSymbol.Name;
+                    
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "IsLocalizePlaceholder", out bool isLocalizePlaceholder))
+                    {
+                        isLocalizePlaceholder = false;
+                    }
 
-                    return (true, new LocalizableFieldInfo(fieldName, localizationKey));
-                }, attributeName)
+                    return (true, new LocalizableFieldInfo(fieldName, localizationKey, isLocalizePlaceholder, isField));
+                }, attributeName, isFromField)
                 .ToArray();
 
             return result;

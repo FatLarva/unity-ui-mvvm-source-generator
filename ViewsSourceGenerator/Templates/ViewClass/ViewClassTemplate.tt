@@ -58,11 +58,8 @@ namespace <#= NamespaceName #>
 			<#= info.ButtonFieldName #>.OnClickAsObservable().Subscribe(_ => model.<#= info.MethodToCall #>()).AddTo(_oneInitDisposable);
 <# } #>
         
-<#	foreach (var localizableFieldInfo in LocalizableFieldInfos) { #>
-			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.text = text).AddTo(_oneInitDisposable);
-<#  } #>
-<#	foreach (var localizableFieldInfo in LocalizablePlaceholderFieldInfos) { #>
-			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.FieldName#>.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text = text).AddTo(_oneInitDisposable);
+<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+			model.<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AsObservable().Subscribe(text => <#=localizableFieldInfo.PathToLocalizableText#> = text).AddTo(_oneInitDisposable);
 <#  } #>
 <#	foreach (var info in SubscribeOnObservableInfos) { #>
 <#		if (info.HasObservableArgument) { #>
