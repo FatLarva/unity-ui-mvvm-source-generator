@@ -10,14 +10,14 @@ namespace ViewsSourceGenerator
         public readonly INamedTypeSymbol ViewModelTypeSymbol;
         public readonly ButtonMethodCallInfo[] MethodsToCall;
         public readonly LocalizableFieldInfo[] LocalizationFieldInfos;
-        public readonly LocalizableFieldInfo[] PlaceholderLocalizationFieldInfos;
+        public readonly LocalizableFieldInfo[] KeyFromFieldLocalizationFieldInfos;
         public readonly SubscribeOnObservableInfo[] MethodForAutoSubscription;
         public readonly ObservableBindingInfo[] ObservablesBindings;
 
         public CommonInfo(string viewModelClassName, string viewModelNamespaceName,
             INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol viewModelTypeSymbol,
             ButtonMethodCallInfo[] methodsToCall,
-            LocalizableFieldInfo[] localizationFieldInfos, LocalizableFieldInfo[] placeholderLocalizationFieldInfos,
+            LocalizableFieldInfo[] localizationFieldInfos, LocalizableFieldInfo[] keyFromFieldLocalizationFieldInfos,
             SubscribeOnObservableInfo[] methodForAutoSubscription, ObservableBindingInfo[] observablesBindings)
         {
             ViewModelClassName = viewModelClassName;
@@ -26,7 +26,7 @@ namespace ViewsSourceGenerator
             ViewModelTypeSymbol = viewModelTypeSymbol;
             MethodsToCall = methodsToCall;
             LocalizationFieldInfos = localizationFieldInfos;
-            PlaceholderLocalizationFieldInfos = placeholderLocalizationFieldInfos;
+            KeyFromFieldLocalizationFieldInfos = keyFromFieldLocalizationFieldInfos;
             MethodForAutoSubscription = methodForAutoSubscription;
             ObservablesBindings = observablesBindings;
         }

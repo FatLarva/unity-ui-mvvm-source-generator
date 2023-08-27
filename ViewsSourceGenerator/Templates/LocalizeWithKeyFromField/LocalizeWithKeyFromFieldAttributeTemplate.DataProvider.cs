@@ -1,12 +1,12 @@
 ﻿namespace ViewsSourceGenerator
 {
-    internal partial class LocalizePlaceholderWithKeyAttributeTemplate
+    internal partial class LocalizeWithKeyFromFieldAttributeTemplate
     {
-        public const string AttributeName = "LocalizePlaceholderWithKeyAttribute";
+        public const string AttributeName = "LocalizeWithKeyFromFieldAttribute";
         public const string SourceFileName = AttributeName + "_g.cs";
         public const string MetaDataName = StaticConstants.AttributesNamespace + "." + AttributeName;
 
-        public LocalizePlaceholderWithKeyAttributeTemplate()
+        public LocalizeWithKeyFromFieldAttributeTemplate()
         {
         }
     }

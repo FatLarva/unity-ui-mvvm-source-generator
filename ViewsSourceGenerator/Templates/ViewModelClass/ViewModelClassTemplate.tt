@@ -39,9 +39,6 @@ namespace <#= NamespaceName #>
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
 		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
-<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
-		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
-<#  } #>
 <#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
 <#		if (subscribeInfo.HasPublicCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPublicPart()#>
@@ -104,9 +101,6 @@ namespace <#= NamespaceName #>
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
 			<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
 <#  } #>
-<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
-			<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
-<#  } #>
 		}
 <# } #>
 
@@ -127,10 +121,7 @@ namespace <#= NamespaceName #>
 			try
 			{
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
-				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizableFieldInfo.LocalizationKey #>");
-<#  } #>
-<#	foreach (var localizableFieldInfo in PlaceholderLocalizationFieldInfos) { #>
-				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey("<#= localizableFieldInfo.LocalizationKey #>");
+				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey(<#= localizableFieldInfo.GetLocalizationKey() #>);
 <#  } #>
 			}
 			catch(Exception exception)

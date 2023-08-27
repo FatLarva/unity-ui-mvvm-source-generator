@@ -21,6 +21,7 @@ namespace <#=StaticConstants.AttributesNamespace#>
     public class LocalizeWithKeyAttribute : Attribute
     {
         public string LocalizationKey { get; }
+        public bool IsLocalizePlaceholder { get; set; }
 
         public LocalizeWithKeyAttribute(string localizationKey)
         {
