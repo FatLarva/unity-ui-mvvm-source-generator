@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -23,6 +24,10 @@ namespace ViewsSourceGenerator
         private static readonly LocalizableString AutoBindingsRuleMessageFormat = $"{HandlingAutoBindingsMethodName} method should be called during constructor. And it should be called only once.";
         private static readonly LocalizableString AutoBindingsRuleDescription = $"{HandlingAutoBindingsMethodName} method should be called during constructor. And it should be called only once.";
         
+        private static readonly LocalizableString AutoBindingsWrongArgumentsRuleTitle = $"{HandlingAutoBindingsMethodName} method called with the wrong parameters.";
+        private static readonly LocalizableString AutoBindingsWrongArgumentsRuleMessageFormat = $"{HandlingAutoBindingsMethodName} method called with the wrong parameters.";
+        private static readonly LocalizableString AutoBindingsWrongArgumentsRuleDescription = $"{HandlingAutoBindingsMethodName} method called with the wrong parameters.";
+
         private static readonly LocalizableString AutoDisposeNotCalledTitle = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
         private static readonly LocalizableString AutoDisposeNotCalledMessageFormat = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
         private static readonly LocalizableString AutoDisposeNotCalledDescription = $"{HandlingAutoDisposeMethodName} method should be called during {DisposeMethodName}() method.";
@@ -38,6 +43,9 @@ namespace ViewsSourceGenerator
         private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription, helpLinkUri: HelpLinkUri);
         
+        private static readonly DiagnosticDescriptor AutoBindingsWrongArgumentsRule = new DiagnosticDescriptor(DiagnosticId, AutoBindingsWrongArgumentsRuleTitle, AutoBindingsWrongArgumentsRuleMessageFormat,
+            Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsWrongArgumentsRuleDescription, helpLinkUri: HelpLinkUri);
+            
         private static readonly DiagnosticDescriptor AutoDisposeNotCalledRule = new DiagnosticDescriptor(DiagnosticId, AutoDisposeNotCalledTitle, AutoDisposeNotCalledMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeNotCalledDescription, helpLinkUri: HelpLinkUri);
         
@@ -47,7 +55,12 @@ namespace ViewsSourceGenerator
         private static readonly DiagnosticDescriptor LifetimeDisposableDirectDisposeRule = new DiagnosticDescriptor(DiagnosticId, LifetimeDisposableDirectDisposeTitle, LifetimeDisposableDirectDisposeMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: LifetimeDisposableDirectDisposeDescription, helpLinkUri: HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(AutoBindingsRule, AutoDisposeNotCalledRule, AutoDisposeCalledMoreThanOnceRule, LifetimeDisposableDirectDisposeRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
+            AutoBindingsRule,
+            AutoBindingsWrongArgumentsRule,
+            AutoDisposeNotCalledRule,
+            AutoDisposeCalledMoreThanOnceRule,
+            LifetimeDisposableDirectDisposeRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -76,35 +89,6 @@ namespace ViewsSourceGenerator
             }
         }
 
-        private void ReportDirectlyCallingDisposeOnLifetimeDisposable(SyntaxNodeAnalysisContext context, SyntaxNode classNode)
-        {
-            var disposeMethodSyntax = classNode
-                .ChildNodes()
-                .OfType<MethodDeclarationSyntax>()
-                .Where(
-                    method =>
-                    {
-                        bool isDisposeImplementation = method.Modifiers.Any(SyntaxKind.PublicKeyword);
-                        isDisposeImplementation &= method.ReturnType is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword);
-                        isDisposeImplementation &= method.ParameterList.Parameters.Count == 0;
-                        isDisposeImplementation &= method.Identifier.Text == DisposeMethodName;
-
-                        return isDisposeImplementation;
-                    })
-                .FirstOrDefault();
-            
-            if (disposeMethodSyntax == null)
-            {
-                return;
-            }
-
-            if (IsDisposeCalledOnLifetimeDisposable(disposeMethodSyntax, out Location location))
-            {
-                var diagnostic = Diagnostic.Create(LifetimeDisposableDirectDisposeRule, location);
-                context.ReportDiagnostic(diagnostic);
-            }
-        }
-
         private static void ReportNotCallingHandleAutoBindingsInConstructor(SyntaxNodeAnalysisContext context, SyntaxNode classNode, ClassDeclarationSyntax classDeclarationSyntax)
         {
             var constructors = classNode.ChildNodes().OfType<ConstructorDeclarationSyntax>().ToImmutableArray();
@@ -122,17 +106,44 @@ namespace ViewsSourceGenerator
                     .Where(
                         invocationExpressionSyntax =>
                         {
-                            if (!IsInvocationOfThisObjectsMethod(invocationExpressionSyntax))
+                            if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out string methodName))
+                            {
+                                return false;
+                            }
+                            
+                            if (string.IsNullOrEmpty(methodName) || !string.Equals(methodName, HandlingAutoBindingsMethodName))
                             {
                                 return false;
                             }
 
-                            if (context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                            var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax);
+                            var mainSymbol = symbolInfo.Symbol;
+                            if (mainSymbol is not null)
+                            {
+                                return CheckSymbolIsMethodWithName(mainSymbol, HandlingAutoBindingsMethodName);
+                            }
+
+                            var candidates = symbolInfo.CandidateSymbols;
+                            if (candidates.Length != 1)
                             {
                                 return false;
                             }
 
-                            return methodSymbol.Name == HandlingAutoBindingsMethodName;
+                            var candidateSymbol = candidates.First();
+                            if (!CheckSymbolIsMethodWithName(candidateSymbol, HandlingAutoBindingsMethodName))
+                            {
+                                return false;
+                            }
+
+                            // If there is one candidate with legit CandidateReason - good chances that it's compilation error
+                            // so we just don't handle this situation in our analyzer - so programmer can fix that compiler error.
+                            // In this case our analyzer report most likely would be misleading.
+                            if (symbolInfo.CandidateReason == CandidateReason.None)
+                            {
+                                return false;
+                            }
+                            
+                            return true;
                         }
                     )
                     .ToArray();
@@ -186,17 +197,44 @@ namespace ViewsSourceGenerator
                 .Where(
                     invocationExpressionSyntax =>
                     {
-                        if (!IsInvocationOfThisObjectsMethod(invocationExpressionSyntax))
+                        if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out string methodName))
+                        {
+                            return false;
+                        }
+                            
+                        if (string.IsNullOrEmpty(methodName) || !string.Equals(methodName, HandlingAutoDisposeMethodName))
+                        {
+                            return false;
+                        }
+                        
+                        var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax);
+                        var mainSymbol = symbolInfo.Symbol;
+                        if (mainSymbol is not null)
+                        {
+                            return CheckSymbolIsMethodWithName(mainSymbol, HandlingAutoDisposeMethodName);
+                        }
+
+                        var candidates = symbolInfo.CandidateSymbols;
+                        if (candidates.Length != 1)
                         {
                             return false;
                         }
 
-                        if (context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax).Symbol is not IMethodSymbol methodSymbol)
+                        var candidateSymbol = candidates.First();
+                        if (!CheckSymbolIsMethodWithName(candidateSymbol, HandlingAutoDisposeMethodName))
                         {
                             return false;
                         }
 
-                        return methodSymbol.Name == HandlingAutoDisposeMethodName;
+                        // If there is one candidate with legit CandidateReason - good chances that it's compilation error
+                        // so we just don't handle this situation in our analyzer - so programmer can fix that compiler error.
+                        // In this case our analyzer report most likely would be misleading.
+                        if (symbolInfo.CandidateReason == CandidateReason.None)
+                        {
+                            return false;
+                        }
+                            
+                        return true;
                     }
                 )
                 .ToArray();
@@ -218,6 +256,35 @@ namespace ViewsSourceGenerator
                     var diagnostic = Diagnostic.Create(AutoDisposeCalledMoreThanOnceRule, invocationSyntax.GetLocation());
                     context.ReportDiagnostic(diagnostic);
                 }
+            }
+        }
+        
+        private void ReportDirectlyCallingDisposeOnLifetimeDisposable(SyntaxNodeAnalysisContext context, SyntaxNode classNode)
+        {
+            var disposeMethodSyntax = classNode
+                .ChildNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(
+                    method =>
+                    {
+                        bool isDisposeImplementation = method.Modifiers.Any(SyntaxKind.PublicKeyword);
+                        isDisposeImplementation &= method.ReturnType is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword);
+                        isDisposeImplementation &= method.ParameterList.Parameters.Count == 0;
+                        isDisposeImplementation &= method.Identifier.Text == DisposeMethodName;
+
+                        return isDisposeImplementation;
+                    })
+                .FirstOrDefault();
+            
+            if (disposeMethodSyntax == null)
+            {
+                return;
+            }
+
+            if (IsDisposeCalledOnLifetimeDisposable(disposeMethodSyntax, out Location location))
+            {
+                var diagnostic = Diagnostic.Create(LifetimeDisposableDirectDisposeRule, location);
+                context.ReportDiagnostic(diagnostic);
             }
         }
 
@@ -254,26 +321,25 @@ namespace ViewsSourceGenerator
                 .Any(ad => ad?.AttributeClass?.ToDisplayString() == GeneratedViewModelAttributeTemplate.MetaDataName);
         }
         
-        private static bool IsInvocationOfThisObjectsMethod(InvocationExpressionSyntax invocation)
+        private static bool TryGetMethodNameIfItThisObjectsMethod(InvocationExpressionSyntax invocation, out string methodName)
         {
             if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
             {
                 var target = memberAccess.Expression;
 
-                if (target is IdentifierNameSyntax)
+                if (target is ThisExpressionSyntax)
                 {
-                    return false;
-                }
-                else if (target is ThisExpressionSyntax)
-                {
+                    methodName = memberAccess.Name.Identifier.Text;
                     return true;
                 }
             }
-            else if (invocation.Expression is IdentifierNameSyntax)
+            else if (invocation.Expression is IdentifierNameSyntax identifierName)
             {
+                methodName = identifierName.Identifier.Text;
                 return true;
             }
 
+            methodName = default;
             return false;
         }
         
@@ -291,6 +357,21 @@ namespace ViewsSourceGenerator
 
             location = null;
             return false;
+        }
+        
+        private static bool CheckSymbolIsMethodWithName(ISymbol symbol, string methodName)
+        {
+            if (symbol is not IMethodSymbol methodSymbol)
+            {
+                return false;
+            }
+                        
+            if (methodSymbol.Name != methodName)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
