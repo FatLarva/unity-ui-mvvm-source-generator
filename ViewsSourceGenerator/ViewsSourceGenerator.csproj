@@ -129,6 +129,10 @@
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>SubViewAttributeTemplate.cs</LastGenOutput>
       </None>
+      <None Update="Templates\LocalizeWithKeyFromField\LocalizeWithKeyFromFieldAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>LocalizeWithKeyFromFieldAttributeTemplate.cs</LastGenOutput>
+      </None>
     </ItemGroup>
 
 
