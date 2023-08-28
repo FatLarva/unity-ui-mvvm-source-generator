@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -60,6 +63,8 @@ namespace ViewsSourceGenerator
             
             if (receiver.IsEligible)
             {
+                var sw = Stopwatch.StartNew();
+
                 const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
                 INamedTypeSymbol localizationProviderInterfaceSymbol = context.Compilation.GetTypeByMetadataName(localizationProviderClassName);
             
@@ -70,16 +75,42 @@ namespace ViewsSourceGenerator
                 
                     return;
                 }
+
+                /*var views = receiver.ViewsClassesToProcess.ToArray();
+
+                var taskOne = Task.Run(() =>
+                {
+                    for (int i = 0; i < views.Length / 2; i++)
+                    {
+                        ProcessView(in context, views[i]);
+                    }
+                });
+                
+                var taskTwo = Task.Run(() =>
+                {
+                    for (int i = views.Length / 2; i < views.Length; i++)
+                    {
+                        ProcessView(in context, views[i]);
+                    }
+                });
+                
+                Task.WaitAll(taskOne, taskTwo);
+                */
                 
                 foreach (var viewClass in receiver.ViewsClassesToProcess)
                 {
                     ProcessView(in context, viewClass);
                 }
+                
+                Console.Out.WriteLine($"ViewModel source generation took {sw.ElapsedMilliseconds}ms");
+                sw.Stop();
             }
         }
 
         private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol)
         {
+            Console.Out.WriteLine($"{viewTypeSymbol.Name} processing on thread: {Thread.CurrentThread.ManagedThreadId}");
+            
             var attribute = GetSingleAttributeData(ViewModelGenerateAttributeTemplate.AttributeName, viewTypeSymbol);
             
             if (!TryGetNamedArgumentValue(attribute.NamedArguments, "ViewModelClassName", out string viewModelClassName))
@@ -245,7 +276,10 @@ namespace ViewsSourceGenerator
                         isLocalizePlaceholder = false;
                     }
 
-                    return (true, new LocalizableFieldInfo(fieldName, localizationKey, isLocalizePlaceholder, isField));
+                    var finalLocalizationKey = isField ? localizationKey + "Meddler" : localizationKey;
+                    var localizationKeyProvideFieldName = isField ? localizationKey : string.Empty;
+                    
+                    return (true, new LocalizableFieldInfo(fieldName, finalLocalizationKey, isLocalizePlaceholder, localizationKeyProvideFieldName));
                 }, attributeName, isFromField)
                 .ToArray();
 
