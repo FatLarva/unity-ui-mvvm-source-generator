@@ -4,6 +4,11 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct AutoCreationInfo
     {
+        public static AutoCreationInfo OnlyObservable(string observableName)
+        {
+            return new(observableName);
+        }
+        
         public readonly string ObservableName;
 
         private readonly InnerAutoCreationFlag _creationFlags;
@@ -15,7 +20,7 @@ namespace ViewsSourceGenerator
 
         public bool HasPublicCreations => _creationFlags.HasFlag(InnerAutoCreationFlag.PublicObservable) || _creationFlags.HasFlag(InnerAutoCreationFlag.PublicReactiveProperty);
 
-        public bool HasObservablesToDispose => HasPrivateCreations;
+        public bool IsEmpty => _creationFlags == InnerAutoCreationFlag.None;
 
         public AutoCreationInfo(string observableName, InnerAutoCreationFlag creationFlags, string observableArgumentType = null)
         {
@@ -23,9 +28,21 @@ namespace ViewsSourceGenerator
             _creationFlags = creationFlags;
             _observableArgumentType = observableArgumentType;
         }
+        
+        private AutoCreationInfo(string observableName)
+        {
+            ObservableName = observableName;
+            _creationFlags = InnerAutoCreationFlag.None;
+            _observableArgumentType = default;
+        }
 
         public string GetAutoCreatedObserversPrivatePart()
         {
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+            
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
@@ -40,6 +57,11 @@ namespace ViewsSourceGenerator
 
         public string GetAutoCreatedObserversDisposePart()
         {
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
@@ -54,6 +76,11 @@ namespace ViewsSourceGenerator
 
         public string GetAutoCreatedObserversPublicPart()
         {
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicObservable) && flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):

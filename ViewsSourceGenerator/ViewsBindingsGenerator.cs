@@ -464,8 +464,16 @@ namespace ViewsSourceGenerator
                                     creationFlags = InnerAutoCreationFlag.None;
                                 }
 
-                                var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
-                                var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                                AutoCreationInfo autoCreationInfo;
+                                if (creationFlags != InnerAutoCreationFlag.None)
+                                {
+                                    var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
+                                    autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                                }
+                                else
+                                {
+                                    autoCreationInfo = AutoCreationInfo.OnlyObservable(observableName);
+                                }
                                 
                                 return new ObservableBindingInfo(field.Name, bindingType, isNegated, delaySettings, autoCreationInfo);
                             });
