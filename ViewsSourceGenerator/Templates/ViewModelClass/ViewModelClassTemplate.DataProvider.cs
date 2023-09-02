@@ -20,7 +20,10 @@ namespace ViewsSourceGenerator
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
-        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose) || ObservableBindingInfos.Any(info => info.HasObservablesToDispose) || NeedLocalization;
+        private bool HasObservablesToDispose => SubscribeOnObservableInfos.Any(info => info.HasObservablesToDispose)
+                                                || ObservableBindingInfos.Any(info => info.HasObservablesToDispose)
+                                                || ButtonMethodCallInfos.Any(info => info.HasObservablesToDispose)
+                                                || NeedLocalization;
 
         private bool ShouldImplementDisposeInterface { get; }
 

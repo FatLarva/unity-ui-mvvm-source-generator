@@ -304,16 +304,29 @@ namespace ViewsSourceGenerator
 
                     var methodToCallName = attributeData.ConstructorArguments[0].Value as string;
                     var fieldName = fieldSymbol.Name;
-                    var handwrittenMethod = viewModel
-                        .GetMembers()
-                        .OfType<IMethodSymbol>()
-                        .FirstOrDefault(method => method.Name == methodToCallName
-                                                  && method.ReturnsVoid
-                                                  && method.DeclaredAccessibility == Accessibility.Public
-                                                  && !IsPartialMethod(method));
-                    var shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
+                    bool shouldGenerateMethodWithPartialStuff;
+                    
+                    AutoCreationInfo autoCreationInfo;
+                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, "PassForwardThroughCommandName", out string passThroughCommandName))
+                    {
+                        autoCreationInfo = new AutoCreationInfo(passThroughCommandName, InnerAutoCreationFlag.WrappedCommand);
+                        shouldGenerateMethodWithPartialStuff = false;
+                    }
+                    else
+                    {
+                        autoCreationInfo = AutoCreationInfo.Empty;
+                        
+                        var handwrittenMethod = viewModel
+                            .GetMembers()
+                            .OfType<IMethodSymbol>()
+                            .FirstOrDefault(method => method.Name == methodToCallName
+                                                      && method.ReturnsVoid
+                                                      && method.DeclaredAccessibility == Accessibility.Public
+                                                      && !IsPartialMethod(method));
+                        shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
+                    }
 
-                    return (true, new ButtonMethodCallInfo(fieldName, methodToCallName, shouldGenerateMethodWithPartialStuff));
+                    return (true, new ButtonMethodCallInfo(fieldName, methodToCallName, shouldGenerateMethodWithPartialStuff, autoCreationInfo));
                 }, attributeName, viewModelTypeSymbol)
                 .ToArray();
             
