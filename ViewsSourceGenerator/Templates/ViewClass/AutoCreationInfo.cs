@@ -4,6 +4,8 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct AutoCreationInfo
     {
+        public static readonly AutoCreationInfo Empty = new AutoCreationInfo(InnerAutoCreationFlag.None);
+        
         public static AutoCreationInfo OnlyObservable(string observableName)
         {
             return new(observableName);
@@ -29,6 +31,13 @@ namespace ViewsSourceGenerator
             _observableArgumentType = observableArgumentType;
         }
         
+        private AutoCreationInfo(InnerAutoCreationFlag creationFlags)
+        {
+            ObservableName = default;
+            _creationFlags = creationFlags;
+            _observableArgumentType = default;
+        }
+        
         private AutoCreationInfo(string observableName)
         {
             ObservableName = observableName;
@@ -50,6 +59,22 @@ namespace ViewsSourceGenerator
 
                 case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty):
                     return $"private readonly ReactiveProperty<{GetObservableArgumentType()}> _{ObservableName.Decapitalize()} = new();";
+            }
+
+            return string.Empty;
+        }
+        
+        public string GetCallingCommandPart()
+        {
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+            
+            switch (_creationFlags)
+            {
+                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
+                    return $"_{ObservableName.Decapitalize()}Cmd.Execute();";
             }
 
             return string.Empty;

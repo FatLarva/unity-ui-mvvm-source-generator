@@ -36,6 +36,11 @@ namespace <#= NamespaceName #>
 		<#=bindingInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
+<#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
+<#		if (methodCallInfo.HasPrivateCreations) { #>
+		<#=methodCallInfo.GetAutoCreatedObserversPrivatePart()#>
+<#		} #>
+<#  } #>
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
 		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
@@ -47,6 +52,11 @@ namespace <#= NamespaceName #>
 <#	foreach (var bindingInfo in ObservableBindingInfos) { #>
 <#		if (bindingInfo.HasPublicCreations) { #>
 		<#=bindingInfo.GetAutoCreatedObserversPublicPart()#>
+<#		} #>
+<#  } #>
+<#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
+<#		if (methodCallInfo.HasPublicCreations) { #>
+		<#=methodCallInfo.GetAutoCreatedObserversPublicPart()#>
 <#		} #>
 <#  } #>
 		
@@ -81,6 +91,12 @@ namespace <#= NamespaceName #>
             On<#= buttonMethodCallInfo.MethodToCall #>();
         }
 		partial void On<#= buttonMethodCallInfo.MethodToCall #>();
+	<# } else if (buttonMethodCallInfo.HasPassForwardCommands) { #>
+
+        public void <#= buttonMethodCallInfo.MethodToCall #>()
+        {
+            <#= buttonMethodCallInfo.GetCallingCommandPart() #>
+        }
 	<# } #>
 
 <#  } #>
@@ -96,6 +112,11 @@ namespace <#= NamespaceName #>
 <#	foreach (var bindingInfo in ObservableBindingInfos) { #>
 <#		if (bindingInfo.HasPrivateCreations) { #>
 			<#=bindingInfo.GetAutoCreatedObserversDisposePart()#>
+<#		} #>
+<#  } #>
+<#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
+<#		if (methodCallInfo.HasPrivateCreations) { #>
+			<#=methodCallInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
