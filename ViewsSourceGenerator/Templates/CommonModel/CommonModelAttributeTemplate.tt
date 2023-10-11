@@ -15,16 +15,14 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
-{
-    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    internal class ViewModelGenerateAttribute : Attribute
-    {
-        public string ViewModelClassName { get; set; }
-        public string ViewModelNamespaceName { get; set; }
-        public bool SkipViewModelGeneration { get; set; }
+<# var ns = StaticConstants.AttributesNamespace; #>
 
-        public ViewModelGenerateAttribute()
+namespace <#=ns#>
+{
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    internal class CommonModelAttribute : Attribute
+    {
+        public CommonModelAttribute()
         {
         }
     }

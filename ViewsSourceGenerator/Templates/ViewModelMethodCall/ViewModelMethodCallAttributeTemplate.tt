@@ -18,7 +18,7 @@ using System;
 namespace <#= ns #>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public class ViewModelMethodCallAttribute : Attribute
+    internal class ViewModelMethodCallAttribute : Attribute
     {
         public string MethodName { get; }
         public string PassForwardThroughCommandName { get; set; }

@@ -18,7 +18,7 @@ using System;
 namespace <#=StaticConstants.AttributesNamespace#>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public class LocalizeWithKeyFromFieldAttribute : Attribute
+    internal class LocalizeWithKeyFromFieldAttribute : Attribute
     {
         public string LocalizationKeyProvidingFieldName { get; }
         public bool IsLocalizePlaceholder { get; set; }
