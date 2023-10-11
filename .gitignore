@@ -129,3 +129,4 @@ _ReSharper*/
 .vs/
 #Nuget packages folder
 packages/
+Directory.Build.props
