@@ -156,9 +156,13 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\ViewsSourceGeneratorAttributes\ViewsSourceGeneratorAttributes.csproj" />
+    </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="Tools/copy_to_unity.bat" />
+      <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationUI)" />
+      <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationModel)" />
     </Target>
 
 </Project>

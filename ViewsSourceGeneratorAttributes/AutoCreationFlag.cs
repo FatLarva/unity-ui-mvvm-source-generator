@@ -3,7 +3,7 @@
 namespace ViewsSourceGenerator
 {
     [Flags]
-    internal enum InnerAutoCreationFlag
+    internal enum AutoCreationFlag
     {
         None = 0,
         PublicObservable = 1 << 0,

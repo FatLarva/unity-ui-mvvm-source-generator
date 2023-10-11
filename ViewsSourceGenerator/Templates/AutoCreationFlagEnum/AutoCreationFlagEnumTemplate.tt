@@ -14,7 +14,7 @@
 // ------------------------------------------------------------------------------
 
 <#
-    var autoCreationFlagValues = Enum.GetNames(typeof(InnerAutoCreationFlag));
+    var autoCreationFlagValues = Enum.GetNames(typeof(AutoCreationFlag));
 #>
 using System;
 
@@ -25,7 +25,7 @@ namespace <#=StaticConstants.AttributesNamespace#>
     {
 <# for(var i = 0; i < autoCreationFlagValues.Length; i++) {#>
 <#     var enumName = autoCreationFlagValues[i]; #>
-        <#= enumName #> = <#= (int)Enum.Parse(typeof(InnerAutoCreationFlag), enumName) #>,
+        <#= enumName #> = <#= (int)Enum.Parse(typeof(AutoCreationFlag), enumName) #>,
 <# } #>
     }
 }

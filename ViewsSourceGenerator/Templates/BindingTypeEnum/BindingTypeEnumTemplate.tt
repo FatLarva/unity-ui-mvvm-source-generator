@@ -14,7 +14,7 @@
 // ------------------------------------------------------------------------------
 
 <#
-    var bindingTypeValues = Enum.GetNames(typeof(InnerBindingType));
+    var bindingTypeValues = Enum.GetNames(typeof(BindingType));
 #>
 namespace <#=StaticConstants.AttributesNamespace#>
 {
