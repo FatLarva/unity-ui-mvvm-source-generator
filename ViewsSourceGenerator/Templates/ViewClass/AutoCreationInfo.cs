@@ -4,7 +4,7 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct AutoCreationInfo
     {
-        public static readonly AutoCreationInfo Empty = new AutoCreationInfo(InnerAutoCreationFlag.None);
+        public static readonly AutoCreationInfo Empty = new AutoCreationInfo(AutoCreationFlag.None);
         
         public static AutoCreationInfo OnlyObservable(string observableName)
         {
@@ -13,25 +13,25 @@ namespace ViewsSourceGenerator
         
         public readonly string ObservableName;
 
-        private readonly InnerAutoCreationFlag _creationFlags;
+        private readonly AutoCreationFlag _creationFlags;
         private readonly string _observableArgumentType;
 
         public bool HasObservableArgument => (_observableArgumentType is not (null or "Unit"));
 
-        public bool HasPrivateCreations => _creationFlags.HasFlag(InnerAutoCreationFlag.PrivateCommand) || _creationFlags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty);
+        public bool HasPrivateCreations => _creationFlags.HasFlag(AutoCreationFlag.PrivateCommand) || _creationFlags.HasFlag(AutoCreationFlag.PrivateReactiveProperty);
 
-        public bool HasPublicCreations => _creationFlags.HasFlag(InnerAutoCreationFlag.PublicObservable) || _creationFlags.HasFlag(InnerAutoCreationFlag.PublicReactiveProperty);
+        public bool HasPublicCreations => _creationFlags.HasFlag(AutoCreationFlag.PublicObservable) || _creationFlags.HasFlag(AutoCreationFlag.PublicReactiveProperty);
 
-        public bool IsEmpty => _creationFlags == InnerAutoCreationFlag.None;
+        public bool IsEmpty => _creationFlags == AutoCreationFlag.None;
 
-        public AutoCreationInfo(string observableName, InnerAutoCreationFlag creationFlags, string observableArgumentType = null)
+        public AutoCreationInfo(string observableName, AutoCreationFlag creationFlags, string observableArgumentType = null)
         {
             ObservableName = observableName;
             _creationFlags = creationFlags;
             _observableArgumentType = observableArgumentType;
         }
         
-        private AutoCreationInfo(InnerAutoCreationFlag creationFlags)
+        private AutoCreationInfo(AutoCreationFlag creationFlags)
         {
             ObservableName = default;
             _creationFlags = creationFlags;
@@ -41,7 +41,7 @@ namespace ViewsSourceGenerator
         private AutoCreationInfo(string observableName)
         {
             ObservableName = observableName;
-            _creationFlags = InnerAutoCreationFlag.None;
+            _creationFlags = AutoCreationFlag.None;
             _observableArgumentType = default;
         }
 
@@ -54,10 +54,10 @@ namespace ViewsSourceGenerator
             
             switch (_creationFlags)
             {
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
                     return $"private readonly {GetReactiveCommandType()} _{ObservableName.Decapitalize()}Cmd = new();";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty):
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"private readonly ReactiveProperty<{GetObservableArgumentType()}> _{ObservableName.Decapitalize()} = new();";
             }
 
@@ -73,7 +73,7 @@ namespace ViewsSourceGenerator
             
             switch (_creationFlags)
             {
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
                     return $"_{ObservableName.Decapitalize()}Cmd.Execute();";
             }
 
@@ -89,10 +89,10 @@ namespace ViewsSourceGenerator
 
             switch (_creationFlags)
             {
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
                     return $"_{ObservableName.Decapitalize()}Cmd.AddTo(compositeDisposable);";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty):
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"_{ObservableName.Decapitalize()}.AddTo(compositeDisposable);";
             }
 
@@ -108,19 +108,19 @@ namespace ViewsSourceGenerator
 
             switch (_creationFlags)
             {
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicObservable) && flags.HasFlag(InnerAutoCreationFlag.PrivateCommand):
+                case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable) && flags.HasFlag(AutoCreationFlag.PrivateCommand):
                     return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()}Cmd;";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicObservable) && flags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty):
+                case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable) && flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()};";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicObservable):
+                case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable):
                     return $"public readonly IObservable<{GetObservableArgumentType()}> {ObservableName};";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicReactiveProperty) && flags.HasFlag(InnerAutoCreationFlag.PrivateReactiveProperty):
+                case var flags when flags.HasFlag(AutoCreationFlag.PublicReactiveProperty) && flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"public IReadOnlyReactiveProperty<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()};";
 
-                case var flags when flags.HasFlag(InnerAutoCreationFlag.PublicReactiveProperty):
+                case var flags when flags.HasFlag(AutoCreationFlag.PublicReactiveProperty):
                     return $"public readonly IReadOnlyReactiveProperty<{GetObservableArgumentType()}> {ObservableName};";
             }
 

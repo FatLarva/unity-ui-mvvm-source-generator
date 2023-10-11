@@ -43,7 +43,7 @@ namespace ViewsSourceGenerator
 
         private static void OnPostInitialization(GeneratorPostInitializationContext context)
         {
-            context.AddSource(ViewModelMethodCallAttributeTemplate.SourceFileName, new ViewModelMethodCallAttributeTemplate().TransformText());
+            /*context.AddSource(ViewModelMethodCallAttributeTemplate.SourceFileName, new ViewModelMethodCallAttributeTemplate().TransformText());
             context.AddSource(ViewModelGenerateAttributeTemplate.SourceFileName, new ViewModelGenerateAttributeTemplate().TransformText());
             context.AddSource(LocalizeWithKeyAttributeTemplate.SourceFileName, new LocalizeWithKeyAttributeTemplate().TransformText());
             context.AddSource(LocalizeWithKeyFromFieldAttributeTemplate.SourceFileName, new LocalizeWithKeyFromFieldAttributeTemplate().TransformText());
@@ -53,7 +53,7 @@ namespace ViewsSourceGenerator
             context.AddSource(AutoCreationFlagEnumTemplate.SourceFileName, new AutoCreationFlagEnumTemplate().TransformText());
             context.AddSource(GeneratedViewModelAttributeTemplate.SourceFileName, new GeneratedViewModelAttributeTemplate().TransformText());
             context.AddSource(SubViewAttributeTemplate.SourceFileName, new SubViewAttributeTemplate().TransformText());
-            context.AddSource(CommonModelAttributeTemplate.SourceFileName, new CommonModelAttributeTemplate().TransformText());
+            context.AddSource(CommonModelAttributeTemplate.SourceFileName, new CommonModelAttributeTemplate().TransformText());*/
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -380,7 +380,7 @@ namespace ViewsSourceGenerator
                     AutoCreationInfo autoCreationInfo;
                     if (TryGetNamedArgumentValue(attributeData.NamedArguments, "PassForwardThroughCommandName", out string? passThroughCommandName))
                     {
-                        autoCreationInfo = new AutoCreationInfo(passThroughCommandName, InnerAutoCreationFlag.WrappedCommand);
+                        autoCreationInfo = new AutoCreationInfo(passThroughCommandName, AutoCreationFlag.WrappedCommand);
                         shouldGenerateMethodWithPartialStuff = false;
                     }
                     else
@@ -450,9 +450,9 @@ namespace ViewsSourceGenerator
 
                         }
 
-                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out InnerAutoCreationFlag creationFlags))
+                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
                         {
-                            creationFlags = InnerAutoCreationFlag.None;
+                            creationFlags = AutoCreationFlag.None;
                         }
 
                         var methodName = methodSymbol.Name;
@@ -499,7 +499,7 @@ namespace ViewsSourceGenerator
                             return (false, default);
                         }
 
-                        var creationFlags = propertySymbol.Name.EndsWith("Cmd") ? InnerAutoCreationFlag.PrivateCommand : InnerAutoCreationFlag.PrivateReactiveProperty;
+                        var creationFlags = propertySymbol.Name.EndsWith("Cmd") ? AutoCreationFlag.PrivateCommand : AutoCreationFlag.PrivateReactiveProperty;
                         
                         var observableName = "_" + propertySymbol.Name.Decapitalize();
                         var methodArgumentType = propertyType.Name;
@@ -606,7 +606,7 @@ namespace ViewsSourceGenerator
                                     return (false, default);
                                 }
                                 
-                                if (attribute.ConstructorArguments[1].Value is not InnerBindingType bindingType)
+                                if (attribute.ConstructorArguments[1].Value is not BindingType bindingType)
                                 {
                                     return (false, default);
                                 }
@@ -619,13 +619,13 @@ namespace ViewsSourceGenerator
                                     isNegated = true;
                                 }
                                 
-                                if (!TryGetNamedArgumentValue(attribute.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out InnerAutoCreationFlag creationFlags))
+                                if (!TryGetNamedArgumentValue(attribute.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
                                 {
-                                    creationFlags = InnerAutoCreationFlag.None;
+                                    creationFlags = AutoCreationFlag.None;
                                 }
 
                                 AutoCreationInfo autoCreationInfo;
-                                if (creationFlags != InnerAutoCreationFlag.None)
+                                if (creationFlags != AutoCreationFlag.None)
                                 {
                                     var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
                                     autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
@@ -645,27 +645,27 @@ namespace ViewsSourceGenerator
             return result;
         }
 
-        private static string GetObservableTypeFromBindingType(InnerBindingType bindingType)
+        private static string GetObservableTypeFromBindingType(BindingType bindingType)
         {
             switch (bindingType)
             {
-                case InnerBindingType.Text:
+                case BindingType.Text:
                     return "string";
-                case InnerBindingType.ImageFill:
+                case BindingType.ImageFill:
                     return "float";
-                case InnerBindingType.GameObjectActivity:
+                case BindingType.GameObjectActivity:
                     return "bool";
-                case InnerBindingType.Activity:
+                case BindingType.Activity:
                     return "bool";
-                case InnerBindingType.Color:
+                case BindingType.Color:
                     return "Color";
-                case InnerBindingType.Sprite:
+                case BindingType.Sprite:
                     return "Sprite";
-                case InnerBindingType.Enabled:
+                case BindingType.Enabled:
                     return "bool";
-                case InnerBindingType.Interactable:
+                case BindingType.Interactable:
                     return "bool";
-                case InnerBindingType.Alpha:
+                case BindingType.Alpha:
                     return "float";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(bindingType), bindingType, $"Undefined binding type: {bindingType}");
