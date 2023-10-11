@@ -18,7 +18,7 @@ using System;
 namespace <#=StaticConstants.AttributesNamespace#>
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-    public class SubViewAttribute : Attribute
+    internal class SubViewAttribute : Attribute
     {
         public string SubViewModelFieldName { get; set; }
         public bool UseSameViewModel { get; set; }

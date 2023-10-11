@@ -7,7 +7,7 @@ namespace ViewsSourceGenerator
         public readonly string ViewModelClassName;
         public readonly string ViewModelNamespaceName;
         public readonly INamedTypeSymbol ViewTypeSymbol;
-        public readonly INamedTypeSymbol ViewModelTypeSymbol;
+        public readonly INamedTypeSymbol? ViewModelTypeSymbol;
         public readonly ButtonMethodCallInfo[] MethodsToCall;
         public readonly LocalizableFieldInfo[] LocalizationFieldInfos;
         public readonly LocalizableFieldInfo[] KeyFromFieldLocalizationFieldInfos;
@@ -15,7 +15,7 @@ namespace ViewsSourceGenerator
         public readonly ObservableBindingInfo[] ObservablesBindings;
 
         public CommonInfo(string viewModelClassName, string viewModelNamespaceName,
-            INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol viewModelTypeSymbol,
+            INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol? viewModelTypeSymbol,
             ButtonMethodCallInfo[] methodsToCall,
             LocalizableFieldInfo[] localizationFieldInfos, LocalizableFieldInfo[] keyFromFieldLocalizationFieldInfos,
             SubscribeOnObservableInfo[] methodForAutoSubscription, ObservableBindingInfo[] observablesBindings)

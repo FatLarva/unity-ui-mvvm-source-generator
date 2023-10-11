@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Nullable>disable</Nullable>
-        <LangVersion>9</LangVersion>
+        <Nullable>enable</Nullable>
+        <LangVersion>10</LangVersion>
         <TargetFramework>netstandard2.0</TargetFramework>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     </PropertyGroup>
@@ -70,6 +70,19 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>LocalizeWithKeyFromFieldAttributeTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\CommonModel\CommonModelAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>CommonModelAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\CommonModel\CommonModelAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>CommonModelAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ModelClass\ModelClassTemplate.cs">
+        <DependentUpon>ModelClassTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -132,6 +145,14 @@
       <None Update="Templates\LocalizeWithKeyFromField\LocalizeWithKeyFromFieldAttributeTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>LocalizeWithKeyFromFieldAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ModelClass\ModelClassTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ModelClassTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\CommonModel\CommonModelAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>CommonModelAttributeTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 

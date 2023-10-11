@@ -16,7 +16,7 @@
         public SubViewInfo(string viewFieldName, bool useSameViewModel)
         {
             ViewFieldName = viewFieldName;
-            ViewModelFieldName = default;
+            ViewModelFieldName = string.Empty;
             UseSameViewModel = useSameViewModel;
         }
     }
