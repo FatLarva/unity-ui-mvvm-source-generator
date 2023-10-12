@@ -482,7 +482,7 @@ namespace ViewsSourceGenerator
                 var result = typeSymbol
                     .GetMembers()
                     .OfType<IPropertySymbol>()
-                    .SelectWhere((propertySymbol, ctx) =>
+                    .SelectWhere((propertySymbol, ctx, type) =>
                     {
                         if (propertySymbol.DeclaredAccessibility is not (Accessibility.Internal or Accessibility.Public))
                         {
@@ -517,9 +517,15 @@ namespace ViewsSourceGenerator
                             
                             autoCreationInfo = new AutoCreationInfo(observableName, AutoCreationFlag.PrivateReactiveProperty, methodArgumentType);
                         }
+
+                        var generatingFieldName = autoCreationInfo.GetPrivatePartFieldName();
+                        if (type.GetMembers().Any(member => string.Equals(member.Name, generatingFieldName, StringComparison.Ordinal)))
+                        {
+                            return (false, default);
+                        }
                         
                         return (true, new ModelObservableInfo(autoCreationInfo));
-                    }, context)
+                    }, context, typeSymbol)
                     .ToArray();
 
                 return result;

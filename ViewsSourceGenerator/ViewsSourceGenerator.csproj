@@ -83,6 +83,16 @@
       <Compile Update="Templates\ModelClass\ModelClassTemplate.cs">
         <DependentUpon>ModelClassTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\GeneratedModel\GeneratedModelAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>GeneratedModelAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\GeneratedModel\GeneratedModelAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>GeneratedModelAttributeTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -153,6 +163,10 @@
       <None Update="Templates\CommonModel\CommonModelAttributeTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>CommonModelAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\GeneratedModel\GeneratedModelAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>GeneratedModelAttributeTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 
