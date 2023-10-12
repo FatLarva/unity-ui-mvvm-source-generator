@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    internal class ViewModelGenerateAttribute : Attribute
+    public class ViewModelGenerateAttribute : Attribute
     {
         public string ViewModelClassName { get; set; }
         public string ViewModelNamespaceName { get; set; }

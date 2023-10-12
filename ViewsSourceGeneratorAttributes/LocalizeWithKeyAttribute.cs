@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    internal class LocalizeWithKeyAttribute : Attribute
+    public class LocalizeWithKeyAttribute : Attribute
     {
         public string LocalizationKey { get; }
         public bool IsLocalizePlaceholder { get; set; }

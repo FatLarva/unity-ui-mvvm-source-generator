@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [Flags]
-    internal enum AutoCreationFlag
+    public enum AutoCreationFlag
     {
         None = 0,
         PublicObservable = 1 << 0,

@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    internal class ViewModelMethodCallAttribute : Attribute
+    public class ViewModelMethodCallAttribute : Attribute
     {
         public string MethodName { get; }
         public string PassForwardThroughCommandName { get; set; }
