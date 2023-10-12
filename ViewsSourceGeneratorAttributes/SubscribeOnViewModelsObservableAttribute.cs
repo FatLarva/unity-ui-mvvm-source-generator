@@ -1,12 +1,12 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    internal class SubscribeOnViewModelsObservableAttribute : Attribute
+    public class SubscribeOnViewModelsObservableAttribute : Attribute
     {
         public string ObservableName;
-        public ViewsSourceGenerator.AutoCreationFlag AutoCreationFlag { get; set; }
+        public ViewModelGeneration.AutoCreationFlag AutoCreationFlag { get; set; }
 
         public SubscribeOnViewModelsObservableAttribute(string observableName)
         {

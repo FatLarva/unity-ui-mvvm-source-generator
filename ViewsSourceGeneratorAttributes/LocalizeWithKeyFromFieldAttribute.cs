@@ -1,12 +1,13 @@
 ﻿using System;
 
-namespace ViewsSourceGenerator
+namespace ViewModelGeneration
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    internal class LocalizeWithKeyFromFieldAttribute : Attribute
+    public class LocalizeWithKeyFromFieldAttribute : Attribute
     {
         public string LocalizationKeyProvidingFieldName { get; }
         public bool IsLocalizePlaceholder { get; set; }
+        
 
         public LocalizeWithKeyFromFieldAttribute(string localizationKeyProvidingFieldName)
         {
