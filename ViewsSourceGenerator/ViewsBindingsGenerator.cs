@@ -54,6 +54,7 @@ namespace ViewsSourceGenerator
             context.AddSource(GeneratedViewModelAttributeTemplate.SourceFileName, new GeneratedViewModelAttributeTemplate().TransformText());
             context.AddSource(SubViewAttributeTemplate.SourceFileName, new SubViewAttributeTemplate().TransformText());
             context.AddSource(CommonModelAttributeTemplate.SourceFileName, new CommonModelAttributeTemplate().TransformText());*/
+            
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -499,12 +500,23 @@ namespace ViewsSourceGenerator
                             return (false, default);
                         }
 
-                        var creationFlags = propertySymbol.Name.EndsWith("Cmd") ? AutoCreationFlag.PrivateCommand : AutoCreationFlag.PrivateReactiveProperty;
+                        AutoCreationInfo autoCreationInfo;
                         
-                        var observableName = "_" + propertySymbol.Name.Decapitalize();
-                        var methodArgumentType = propertyType.Name;
-
-                        var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                        var isCommand = propertySymbol.Name.EndsWith("Cmd");
+                        if (isCommand)
+                        {
+                            var observableName = propertySymbol.Name.Decapitalize().Remove("Cmd");
+                            var methodArgumentType = observableGenericType?.Name ?? string.Empty;
+                            
+                            autoCreationInfo = new AutoCreationInfo(observableName, AutoCreationFlag.PrivateCommand, methodArgumentType);
+                        }
+                        else
+                        {
+                            var observableName = propertySymbol.Name.Decapitalize();
+                            var methodArgumentType = observableGenericType?.Name ?? string.Empty;
+                            
+                            autoCreationInfo = new AutoCreationInfo(observableName, AutoCreationFlag.PrivateReactiveProperty, methodArgumentType);
+                        }
                         
                         return (true, new ModelObservableInfo(autoCreationInfo));
                     }, context)
@@ -526,10 +538,14 @@ namespace ViewsSourceGenerator
             {
                 return false;
             }
+            
             var comparer = SymbolEqualityComparer.Default;
 
-            var isValid = comparer.Equals(propertyType, compilation.GetTypeByMetadataName($"UniRx.IObservable<{observableGenericType}>"));
-            isValid |= comparer.Equals(propertyType, compilation.GetTypeByMetadataName($"UniRx.IReadOnlyReactiveProperty<{observableGenericType}>"));
+            var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
+            var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
+            
+            var isValid = comparer.Equals(propertyType, observableType);
+            isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
             return isValid;
         }
@@ -606,10 +622,12 @@ namespace ViewsSourceGenerator
                                     return (false, default);
                                 }
                                 
-                                if (attribute.ConstructorArguments[1].Value is not BindingType bindingType)
+                                if (attribute.ConstructorArguments[1].Value is not int bindingTypeObject)
                                 {
                                     return (false, default);
                                 }
+
+                                var bindingType = (BindingType)bindingTypeObject;
                                 
                                 var isNegated = false;
                                 

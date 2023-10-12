@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <Nullable>enable</Nullable>
-        <LangVersion>10</LangVersion>
+        <LangVersion>9</LangVersion>
         <TargetFramework>netstandard2.0</TargetFramework>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     </PropertyGroup>
@@ -156,12 +156,8 @@
       </None>
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\ViewsSourceGeneratorAttributes\ViewsSourceGeneratorAttributes.csproj" />
-    </ItemGroup>
-
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationUI)" />
+<!--      <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationUI)" />-->
       <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationModel)" />
     </Target>
 

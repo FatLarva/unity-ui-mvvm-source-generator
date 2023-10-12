@@ -4,7 +4,7 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct AutoCreationInfo
     {
-        public static readonly AutoCreationInfo Empty = new AutoCreationInfo(AutoCreationFlag.None);
+        public static readonly AutoCreationInfo Empty = new (AutoCreationFlag.None);
         
         public static AutoCreationInfo OnlyObservable(string observableName)
         {
@@ -14,7 +14,7 @@ namespace ViewsSourceGenerator
         public readonly string ObservableName;
 
         private readonly AutoCreationFlag _creationFlags;
-        private readonly string _observableArgumentType;
+        private readonly string? _observableArgumentType;
 
         public bool HasObservableArgument => (_observableArgumentType is not (null or "Unit"));
 
@@ -24,7 +24,7 @@ namespace ViewsSourceGenerator
 
         public bool IsEmpty => _creationFlags == AutoCreationFlag.None;
 
-        public AutoCreationInfo(string observableName, AutoCreationFlag creationFlags, string observableArgumentType = null)
+        public AutoCreationInfo(string observableName, AutoCreationFlag creationFlags, string? observableArgumentType = null)
         {
             ObservableName = observableName;
             _creationFlags = creationFlags;
@@ -33,7 +33,7 @@ namespace ViewsSourceGenerator
         
         private AutoCreationInfo(AutoCreationFlag creationFlags)
         {
-            ObservableName = default;
+            ObservableName = string.Empty;
             _creationFlags = creationFlags;
             _observableArgumentType = default;
         }
