@@ -45,6 +45,25 @@ namespace ViewsSourceGenerator
             _observableArgumentType = default;
         }
 
+        public string GetPrivatePartFieldName()
+        {
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+            
+            switch (_creationFlags)
+            {
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
+                    return $"_{ObservableName.Decapitalize()}Cmd";
+
+                case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
+                    return $"_{ObservableName.Decapitalize()}";
+            }
+
+            return string.Empty;
+        }
+        
         public string GetAutoCreatedObserversPrivatePart()
         {
             if (IsEmpty)
@@ -55,10 +74,10 @@ namespace ViewsSourceGenerator
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
-                    return $"private readonly {GetReactiveCommandType()} _{ObservableName.Decapitalize()}Cmd = new();";
+                    return $"private readonly {GetReactiveCommandType()} {GetPrivatePartFieldName()} = new();";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
-                    return $"private readonly ReactiveProperty<{GetObservableArgumentType()}> _{ObservableName.Decapitalize()} = new();";
+                    return $"private readonly ReactiveProperty<{GetObservableArgumentType()}> {GetPrivatePartFieldName()} = new();";
             }
 
             return string.Empty;
@@ -74,7 +93,7 @@ namespace ViewsSourceGenerator
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
-                    return $"_{ObservableName.Decapitalize()}Cmd.Execute();";
+                    return $"{GetPrivatePartFieldName()}.Execute();";
             }
 
             return string.Empty;
@@ -90,10 +109,10 @@ namespace ViewsSourceGenerator
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
-                    return $"_{ObservableName.Decapitalize()}Cmd.AddTo(compositeDisposable);";
+                    return $"{GetPrivatePartFieldName()}.AddTo(compositeDisposable);";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
-                    return $"_{ObservableName.Decapitalize()}.AddTo(compositeDisposable);";
+                    return $"{GetPrivatePartFieldName()}.AddTo(compositeDisposable);";
             }
 
             return string.Empty;
@@ -109,16 +128,16 @@ namespace ViewsSourceGenerator
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable) && flags.HasFlag(AutoCreationFlag.PrivateCommand):
-                    return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()}Cmd;";
+                    return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => {GetPrivatePartFieldName()};";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable) && flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
-                    return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()};";
+                    return $"public IObservable<{GetObservableArgumentType()}> {ObservableName} => {GetPrivatePartFieldName()};";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PublicObservable):
                     return $"public readonly IObservable<{GetObservableArgumentType()}> {ObservableName};";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PublicReactiveProperty) && flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
-                    return $"public IReadOnlyReactiveProperty<{GetObservableArgumentType()}> {ObservableName} => _{ObservableName.Decapitalize()};";
+                    return $"public IReadOnlyReactiveProperty<{GetObservableArgumentType()}> {ObservableName} => {GetPrivatePartFieldName()};";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PublicReactiveProperty):
                     return $"public readonly IReadOnlyReactiveProperty<{GetObservableArgumentType()}> {ObservableName};";

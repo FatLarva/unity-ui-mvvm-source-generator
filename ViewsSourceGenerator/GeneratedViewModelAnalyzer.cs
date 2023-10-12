@@ -68,8 +68,8 @@ namespace ViewsSourceGenerator
         private static readonly LocalizableString LifetimeDisposableDirectDisposeDescription =
             $"{LifetimeDisposableName}.{DisposeMethodName}() should not be called directly. Call {HandlingAutoDisposeMethodName}() instead.";
 
-        private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(DiagnosticId,
-            AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
+        private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(
+            DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription,
             helpLinkUri: HelpLinkUri);
 
@@ -78,8 +78,8 @@ namespace ViewsSourceGenerator
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true,
             description: AutoBindingsWrongArgumentsRuleDescription, helpLinkUri: HelpLinkUri);
 
-        private static readonly DiagnosticDescriptor AutoDisposeNotCalledRule = new DiagnosticDescriptor(DiagnosticId,
-            AutoDisposeNotCalledTitle, AutoDisposeNotCalledMessageFormat,
+        private static readonly DiagnosticDescriptor AutoDisposeNotCalledRule = new DiagnosticDescriptor(
+            DiagnosticId, AutoDisposeNotCalledTitle, AutoDisposeNotCalledMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoDisposeNotCalledDescription,
             helpLinkUri: HelpLinkUri);
 
@@ -110,9 +110,10 @@ namespace ViewsSourceGenerator
         private void AnalyzeFieldDeclaration(SyntaxNodeAnalysisContext context)
         {
             var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
-            var classSymbol = (ITypeSymbol)context.ContainingSymbol;
 
-            if (classSymbol != null && HasGeneratedViewModelAttribute(classSymbol))
+            if (context.ContainingSymbol is ITypeSymbol classSymbol 
+                && (HasAttribute(classSymbol, GeneratedViewModelAttributeTemplate.MetaDataName)
+                    || HasAttribute(classSymbol, GeneratedModelAttributeTemplate.MetaDataName)))
             {
                 if (!TryGetHandwrittenPartOfClass(classSymbol, out SyntaxNode classNode))
                 {
@@ -459,10 +460,10 @@ namespace ViewsSourceGenerator
             return false;
         }
 
-        private static bool HasGeneratedViewModelAttribute(ISymbol classSymbol)
+        private static bool HasAttribute(ISymbol classSymbol, string attributeMetaName)
         {
             return classSymbol.GetAttributes()
-                .Any(ad => ad?.AttributeClass?.ToDisplayString() == GeneratedViewModelAttributeTemplate.MetaDataName);
+                .Any(ad => ad?.AttributeClass?.ToDisplayString() == attributeMetaName);
         }
 
         private static bool TryGetMethodNameIfItThisObjectsMethod(InvocationExpressionSyntax invocation,
