@@ -4,6 +4,8 @@ namespace ViewsSourceGenerator
     {
         private readonly AutoCreationInfo _autoCreationInfo;
 
+        public bool OnlyDisposing { get; }
+        
         public string ObservableName => _autoCreationInfo.ObservableName;
 
         public bool HasObservableArgument => _autoCreationInfo.HasObservableArgument;
@@ -14,8 +16,9 @@ namespace ViewsSourceGenerator
 
         public bool HasObservablesToDispose => HasPrivateCreations;
 
-        public ModelObservableInfo(AutoCreationInfo autoCreationInfo)
+        public ModelObservableInfo(AutoCreationInfo autoCreationInfo, bool onlyDisposing)
         {
+            OnlyDisposing = onlyDisposing;
             _autoCreationInfo = autoCreationInfo;
         }
 

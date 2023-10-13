@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace ViewsSourceGenerator
 {
@@ -10,6 +11,8 @@ namespace ViewsSourceGenerator
 
         private ModelObservableInfo[] ModelObservableInfos { get; }
         
+        private List<string> Usings { get; }
+
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
         private bool HasObservablesToDispose => ModelObservableInfos.Any(info => info.HasObservablesToDispose);
@@ -20,11 +23,13 @@ namespace ViewsSourceGenerator
             string className,
             string namespaceName,
             ModelObservableInfo[] modelObservableInfos,
+            List<string> usings,
             bool shouldImplementDisposeInterface)
         {
             ClassName = className;
             NamespaceName = namespaceName;
             ModelObservableInfos = modelObservableInfos;
+            Usings = usings;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;
         }
 
