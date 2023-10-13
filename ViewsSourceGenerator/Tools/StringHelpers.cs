@@ -26,6 +26,11 @@ namespace ViewsSourceGenerator.Tools
             return char.ToLowerInvariant(sourceString[0]) + sourceString.Substring(1);
         }
         
+        public static string Camel(this string sourceString)
+        {
+            return sourceString[0] == '_' ? sourceString : '_' + sourceString;
+        }
+        
         public static string ToPascalCase(this string sourceString)
         {
             if (!sourceString.Contains(' ') && !sourceString.Contains('_'))

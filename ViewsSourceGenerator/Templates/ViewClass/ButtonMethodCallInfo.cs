@@ -1,34 +1,30 @@
+using ViewsSourceGenerator.Tools;
+
 namespace ViewsSourceGenerator
 {
     internal readonly struct ButtonMethodCallInfo
     {
-        public readonly string ButtonFieldName;
-        public readonly string MethodToCall;
-        public readonly bool ShouldGenerateMethodWithPartialStuff;
-        private readonly AutoCreationInfo _autoCreationInfo;
+        public string ButtonFieldName{ get; init; }
+        public string MethodToCall{ get; init; }
+        public bool ShouldGenerateMethodWithPartialStuff{ get; init; }
+        public AutoCreationInfo AutoCreationInfo{ get; init; }
+        public int InactivePeriodMs { get; init; }
 
-        public bool HasPrivateCreations => _autoCreationInfo.HasPrivateCreations;
+        public bool HasPrivateCreations => AutoCreationInfo.HasPrivateCreations;
 
-        public bool HasPublicCreations => _autoCreationInfo.HasPublicCreations;
+        public bool HasPublicCreations => AutoCreationInfo.HasPublicCreations;
 
         public bool HasObservablesToDispose => HasPrivateCreations;
         
-        public bool HasPassForwardCommands => !_autoCreationInfo.IsEmpty;
+        public bool HasPassForwardCommands => !AutoCreationInfo.IsEmpty;
+        public string LastClickFieldName => $"{ButtonFieldName.Decapitalize().Camel()}LastClickTime";
         
-        public ButtonMethodCallInfo(string buttonFieldName, string methodToCall, bool shouldGenerateMethodWithPartialStuff, AutoCreationInfo autoCreationInfo)
-        {
-            ButtonFieldName = buttonFieldName;
-            MethodToCall = methodToCall;
-            ShouldGenerateMethodWithPartialStuff = shouldGenerateMethodWithPartialStuff;
-            _autoCreationInfo = autoCreationInfo;
-        }
-        
-        public string GetAutoCreatedObserversPrivatePart() => _autoCreationInfo.GetAutoCreatedObserversPrivatePart();
+        public string GetAutoCreatedObserversPrivatePart() => AutoCreationInfo.GetAutoCreatedObserversPrivatePart();
 
-        public string GetAutoCreatedObserversDisposePart() => _autoCreationInfo.GetAutoCreatedObserversDisposePart();
+        public string GetAutoCreatedObserversDisposePart() => AutoCreationInfo.GetAutoCreatedObserversDisposePart();
 
-        public string GetAutoCreatedObserversPublicPart() => _autoCreationInfo.GetAutoCreatedObserversPublicPart();
+        public string GetAutoCreatedObserversPublicPart() => AutoCreationInfo.GetAutoCreatedObserversPublicPart();
         
-        public string GetCallingCommandPart() => _autoCreationInfo.GetCallingCommandPart();
+        public string GetCallingCommandPart() => AutoCreationInfo.GetCallingCommandPart();
     }
 }
