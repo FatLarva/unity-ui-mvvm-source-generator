@@ -193,16 +193,38 @@ namespace ViewsSourceGenerator
             var namespaceName = modelTypeSymbol.GetFullNamespace();
             bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(modelTypeSymbol);
             ModelObservableInfo[] modelObservableInfos = GetModelObservableInfos(context, modelTypeSymbol);
+            var usings = GetUsings(modelTypeSymbol);
             
             var classTemplate = new ModelClassTemplate(
                 className,
                 namespaceName,
                 modelObservableInfos,
+                usings,
                 shouldImplementDisposeInterface);
             
             var classFileName = $"{className}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
+        }
+
+        private static List<string> GetUsings(INamedTypeSymbol modelTypeSymbol)
+        {
+            var result = new List<string>(20);
+            
+            foreach (var declarationReference in modelTypeSymbol.DeclaringSyntaxReferences)
+            {
+                SyntaxTree syntaxTree = declarationReference.SyntaxTree;
+                SyntaxNode root = syntaxTree.GetRoot();
+
+                var middleResult = root
+                    .DescendantNodes()
+                    .OfType<UsingDirectiveSyntax>()
+                    .Select(usingDirective => usingDirective.ToFullString().TrimEnd());
+                
+                result.AddRange(middleResult);
+            }
+
+            return result;
         }
 
         private CommonInfo GatherCommonInfo(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName, string viewModelNamespaceName)
@@ -493,9 +515,10 @@ namespace ViewsSourceGenerator
                         {
                             return (false, default);
                         }
+
+                        ITypeSymbol observableGenericType = propertyType.TypeArguments[0];
                         
-                        INamedTypeSymbol? observableGenericType = propertyType.TypeArguments[0] as INamedTypeSymbol;
-                        if (!CheckPropertyTypeValidity(propertyType, observableGenericType, ctx.Compilation))
+                        if (!CheckPropertyTypeValidity(propertyType, observableGenericType, ctx.Compilation, out string genericTypeName))
                         {
                             return (false, default);
                         }
@@ -506,25 +529,22 @@ namespace ViewsSourceGenerator
                         if (isCommand)
                         {
                             var observableName = propertySymbol.Name.Decapitalize().Remove("Cmd");
-                            var methodArgumentType = observableGenericType?.Name ?? string.Empty;
+                            var methodArgumentType = genericTypeName;
                             
                             autoCreationInfo = new AutoCreationInfo(observableName, AutoCreationFlag.PrivateCommand, methodArgumentType);
                         }
                         else
                         {
                             var observableName = propertySymbol.Name.Decapitalize();
-                            var methodArgumentType = observableGenericType?.Name ?? string.Empty;
+                            var methodArgumentType = genericTypeName;
                             
                             autoCreationInfo = new AutoCreationInfo(observableName, AutoCreationFlag.PrivateReactiveProperty, methodArgumentType);
                         }
 
                         var generatingFieldName = autoCreationInfo.GetPrivatePartFieldName();
-                        if (type.GetMembers().Any(member => string.Equals(member.Name, generatingFieldName, StringComparison.Ordinal)))
-                        {
-                            return (false, default);
-                        }
+                        var alreadyHasPrivateField = type.GetMembers().Any(member => string.Equals(member.Name, generatingFieldName, StringComparison.Ordinal));
                         
-                        return (true, new ModelObservableInfo(autoCreationInfo));
+                        return (true, new ModelObservableInfo(autoCreationInfo, alreadyHasPrivateField));
                     }, context, typeSymbol)
                     .ToArray();
 
@@ -538,22 +558,34 @@ namespace ViewsSourceGenerator
             return Array.Empty<ModelObservableInfo>();
         }
 
-        private static bool CheckPropertyTypeValidity(INamedTypeSymbol propertyType, INamedTypeSymbol? observableGenericType, Compilation compilation)
+        private static bool CheckPropertyTypeValidity(INamedTypeSymbol propertyType, ITypeSymbol observableGenericType, Compilation compilation, out string name)
         {
-            if (observableGenericType == null)
-            {
-                return false;
-            }
-            
             var comparer = SymbolEqualityComparer.Default;
-
-            var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
-            var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
             
-            var isValid = comparer.Equals(propertyType, observableType);
-            isValid |= comparer.Equals(propertyType, reactivePropertyType);
+            if (observableGenericType is INamedTypeSymbol namedType)
+            {
+                var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(namedType);
+                var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(namedType);
+            
+                var isValid = comparer.Equals(propertyType, observableType);
+                isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
-            return isValid;
+                name = namedType.Name;
+                
+                return isValid;
+            }
+            else
+            {
+                var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
+                var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
+            
+                var isValid = comparer.Equals(propertyType, observableType);
+                isValid |= comparer.Equals(propertyType, reactivePropertyType);
+
+                name = observableGenericType.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly));
+                
+                return isValid;
+            }
         }
 
         private static bool TryGetDelayFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out ObservableBindingDelaySettings? delaySettings)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -115,7 +116,7 @@ namespace ViewsSourceGenerator
                 && (HasAttribute(classSymbol, GeneratedViewModelAttributeTemplate.MetaDataName)
                     || HasAttribute(classSymbol, GeneratedModelAttributeTemplate.MetaDataName)))
             {
-                if (!TryGetHandwrittenPartOfClass(classSymbol, out SyntaxNode classNode))
+                if (!TryGetHandwrittenPartOfClass(classSymbol, out var classNode))
                 {
                     return;
                 }
@@ -157,7 +158,7 @@ namespace ViewsSourceGenerator
                         .SelectManyWhere(FlattenInvocationChains);
                 
                 var handleAutoBindingsCalls = invocationsThroughWholeConstructorsChain
-                    .Where(FilterHandleAutoBindings)
+                    .Where(i => i != null && FilterHandleAutoBindings(i))
                     .ToArray();
                 
                 if (handleAutoBindingsCalls.Length == 1)
@@ -174,7 +175,7 @@ namespace ViewsSourceGenerator
                 {
                     foreach (var invocationSyntax in handleAutoBindingsCalls)
                     {
-                        var diagnostic = Diagnostic.Create(AutoBindingsRule, invocationSyntax.GetLocation());
+                        var diagnostic = Diagnostic.Create(AutoBindingsRule, invocationSyntax?.GetLocation());
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
@@ -182,16 +183,16 @@ namespace ViewsSourceGenerator
 
             return;
             
-            (bool, IEnumerable<InvocationExpressionSyntax>) FlattenInvocationChains(InvocationExpressionSyntax invocationExpressionSyntax)
+            (bool, IEnumerable<InvocationExpressionSyntax?>) FlattenInvocationChains(InvocationExpressionSyntax? invocationExpressionSyntax)
             {
                 if (invocationExpressionSyntax == null)
                 {
-                    return (false, default);
+                    return (false, Array.Empty<InvocationExpressionSyntax>());
                 }
                 
-                if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out string methodName) || string.IsNullOrEmpty(methodName))
+                if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out var methodName) || string.IsNullOrEmpty(methodName))
                 {
-                    return (false, default);
+                    return (false, Array.Empty<InvocationExpressionSyntax>());
                 }
 
                 if (string.Equals(methodName, HandlingAutoBindingsMethodName))
@@ -200,24 +201,28 @@ namespace ViewsSourceGenerator
                 }
 
                 SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax);
-                ISymbol mainSymbol = symbolInfo.Symbol;
 
-                if (mainSymbol is not IMethodSymbol methodSymbol)
+                if (symbolInfo.Symbol is not IMethodSymbol methodSymbol)
                 {
-                    return (false, default);
+                    return (false, Array.Empty<InvocationExpressionSyntax>());
                 }
                 
-                SyntaxNode methodSyntax = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault().GetSyntax();
-                var innerInvocations = methodSyntax
+                SyntaxNode? methodSyntax = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+                var innerInvocations = methodSyntax?
                     .DescendantNodesAndSelf()
                     .OfType<InvocationExpressionSyntax>();
+
+                if (innerInvocations == null)
+                {
+                    return (false, Array.Empty<InvocationExpressionSyntax>());
+                }
 
                 return (true, innerInvocations);
             }
             
             bool FilterHandleAutoBindings(InvocationExpressionSyntax invocationExpressionSyntax)
             {
-                if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out string methodName))
+                if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out var methodName))
                 {
                     return false;
                 }
@@ -335,13 +340,12 @@ namespace ViewsSourceGenerator
                 .Where(
                     invocationExpressionSyntax =>
                     {
-                        if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out string methodName))
+                        if (!TryGetMethodNameIfItThisObjectsMethod(invocationExpressionSyntax, out var methodName))
                         {
                             return false;
                         }
 
-                        if (string.IsNullOrEmpty(methodName) ||
-                            !string.Equals(methodName, HandlingAutoDisposeMethodName))
+                        if (string.IsNullOrEmpty(methodName) || !string.Equals(methodName, HandlingAutoDisposeMethodName))
                         {
                             return false;
                         }
@@ -423,14 +427,14 @@ namespace ViewsSourceGenerator
                 return;
             }
 
-            if (IsDisposeCalledOnLifetimeDisposable(disposeMethodSyntax, out Location location))
+            if (IsDisposeCalledOnLifetimeDisposable(disposeMethodSyntax, out var location))
             {
                 var diagnostic = Diagnostic.Create(LifetimeDisposableDirectDisposeRule, location);
                 context.ReportDiagnostic(diagnostic);
             }
         }
 
-        private static bool TryGetHandwrittenPartOfClass(ITypeSymbol classSymbol, out SyntaxNode result)
+        private static bool TryGetHandwrittenPartOfClass(ITypeSymbol classSymbol, [MaybeNullWhen(false)] out SyntaxNode result)
         {
             var className = classSymbol.Name;
             foreach (var declarationReference in classSymbol.DeclaringSyntaxReferences)
@@ -439,7 +443,7 @@ namespace ViewsSourceGenerator
                     .GetSyntax()
                     .DescendantNodesAndSelf()
                     .OfType<ClassDeclarationSyntax>()
-                    .FirstOrDefault(classDeclaration => (string)classDeclaration.Identifier.Value == className);
+                    .FirstOrDefault(classDeclaration => classDeclaration.Identifier.Value is string id && id == className);
 
                 if (classDeclaration == null)
                 {
@@ -447,7 +451,8 @@ namespace ViewsSourceGenerator
                 }
 
                 if (classDeclaration.AttributeLists.Any(attributeList => attributeList.Attributes.Any(attributeSyntax =>
-                        attributeSyntax.Name.ToFullString() == GeneratedViewModelAttributeTemplate.MetaDataName)))
+                        attributeSyntax.Name.ToFullString() == GeneratedViewModelAttributeTemplate.MetaDataName
+                        || attributeSyntax.Name.ToFullString() == GeneratedModelAttributeTemplate.MetaDataName)))
                 {
                     continue;
                 }
@@ -466,10 +471,9 @@ namespace ViewsSourceGenerator
                 .Any(ad => ad?.AttributeClass?.ToDisplayString() == attributeMetaName);
         }
 
-        private static bool TryGetMethodNameIfItThisObjectsMethod(InvocationExpressionSyntax invocation,
-            out string methodName)
+        private static bool TryGetMethodNameIfItThisObjectsMethod(InvocationExpressionSyntax? invocation, [MaybeNullWhen(false)] out string methodName)
         {
-            if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
+            if (invocation?.Expression is MemberAccessExpressionSyntax memberAccess)
             {
                 var target = memberAccess.Expression;
 
@@ -479,7 +483,7 @@ namespace ViewsSourceGenerator
                     return true;
                 }
             }
-            else if (invocation.Expression is IdentifierNameSyntax identifierName)
+            else if (invocation?.Expression is IdentifierNameSyntax identifierName)
             {
                 methodName = identifierName.Identifier.Text;
                 return true;
@@ -489,16 +493,14 @@ namespace ViewsSourceGenerator
             return false;
         }
 
-        private static bool IsDisposeCalledOnLifetimeDisposable(MethodDeclarationSyntax methodSyntax,
-            out Location location)
+        private static bool IsDisposeCalledOnLifetimeDisposable(MethodDeclarationSyntax methodSyntax, [MaybeNullWhen(false)] out Location location)
         {
             foreach (var invocation in methodSyntax.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
             {
                 if (invocation.Expression is MemberAccessExpressionSyntax
                     {
-                        Name: { Identifier: { Text: DisposeMethodName } }
-                    } memberAccess &&
-                    memberAccess.Expression is IdentifierNameSyntax { Identifier: { Text: LifetimeDisposableName } })
+                        Name: { Identifier: { Text: DisposeMethodName } }, Expression: IdentifierNameSyntax { Identifier: { Text: LifetimeDisposableName } }
+                    } memberAccess)
                 {
                     location = memberAccess.GetLocation();
                     return true;
