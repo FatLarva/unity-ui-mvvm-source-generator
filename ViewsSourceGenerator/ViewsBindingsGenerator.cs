@@ -223,6 +223,9 @@ namespace ViewsSourceGenerator
                 
                 result.AddRange(middleResult);
             }
+            
+            result.Add("using UniRx;");
+            result = result.Distinct(StringComparer.Ordinal).ToList();
 
             return result;
         }
@@ -399,7 +402,12 @@ namespace ViewsSourceGenerator
                     
                     var fieldName = fieldSymbol.Name;
                     bool shouldGenerateMethodWithPartialStuff;
-                    
+
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "ClickCooldownMs", out int clickCooldown))
+                    {
+                        clickCooldown = 0;
+                    }
+
                     AutoCreationInfo autoCreationInfo;
                     if (TryGetNamedArgumentValue(attributeData.NamedArguments, "PassForwardThroughCommandName", out string? passThroughCommandName))
                     {
@@ -419,7 +427,14 @@ namespace ViewsSourceGenerator
                         shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
                     }
 
-                    return (true, new ButtonMethodCallInfo(fieldName, methodToCallName, shouldGenerateMethodWithPartialStuff, autoCreationInfo));
+                    return (true, new ButtonMethodCallInfo
+                        {
+                            ButtonFieldName = fieldName,
+                            MethodToCall = methodToCallName,
+                            ShouldGenerateMethodWithPartialStuff = shouldGenerateMethodWithPartialStuff,
+                            AutoCreationInfo = autoCreationInfo,
+                            InactivePeriodMs = clickCooldown,
+                        });
                 }, attributeName, viewModelTypeSymbol)
                 .ToArray();
             

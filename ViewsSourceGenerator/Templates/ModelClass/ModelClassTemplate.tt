@@ -14,7 +14,6 @@
 <#	foreach (var oneUsing in Usings) { #>
 <#= oneUsing#>
 <#  } #>
-using UniRx;
 
 <# if (HasNamespace) { #>
 namespace <#= NamespaceName #>
