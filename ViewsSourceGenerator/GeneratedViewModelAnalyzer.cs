@@ -68,7 +68,8 @@ namespace ViewsSourceGenerator
 
         private static readonly LocalizableString LifetimeDisposableDirectDisposeDescription =
             $"{LifetimeDisposableName}.{DisposeMethodName}() should not be called directly. Call {HandlingAutoDisposeMethodName}() instead.";
-
+        
+#pragma warning disable RS2008
         private static readonly DiagnosticDescriptor AutoBindingsRule = new DiagnosticDescriptor(
             DiagnosticId, AutoBindingsRuleTitle, AutoBindingsRuleMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: AutoBindingsRuleDescription,
@@ -93,7 +94,7 @@ namespace ViewsSourceGenerator
             DiagnosticId, LifetimeDisposableDirectDisposeTitle, LifetimeDisposableDirectDisposeMessageFormat,
             Category, DiagnosticSeverity.Error, isEnabledByDefault: true,
             description: LifetimeDisposableDirectDisposeDescription, helpLinkUri: HelpLinkUri);
-
+#pragma warning restore RS2008
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             AutoBindingsRule,
             AutoBindingsWrongArgumentsRule,

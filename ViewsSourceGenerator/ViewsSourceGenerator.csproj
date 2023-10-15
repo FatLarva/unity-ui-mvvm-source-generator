@@ -12,8 +12,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" />
-      <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0-5.final" />
+      <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
+      <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.0.1" />
       <PackageReference Include="System.CodeDom" Version="4.4.0" />
     </ItemGroup>
 
@@ -171,7 +171,6 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-<!--      <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationUI)" />-->
       <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(DestinationModel)" />
     </Target>
 
