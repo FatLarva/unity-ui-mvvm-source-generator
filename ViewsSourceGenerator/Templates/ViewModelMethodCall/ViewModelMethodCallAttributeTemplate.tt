@@ -12,9 +12,11 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
+#nullable enable
 
 using System;
 <# var ns = StaticConstants.AttributesNamespace; #>
+
 namespace <#= ns #>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]

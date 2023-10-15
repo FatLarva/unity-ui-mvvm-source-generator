@@ -10,6 +10,7 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
+#nullable enable
 
 <#	foreach (var oneUsing in Usings) { #>
 <#= oneUsing#>
