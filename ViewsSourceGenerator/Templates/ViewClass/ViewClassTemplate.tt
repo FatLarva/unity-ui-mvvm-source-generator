@@ -30,8 +30,8 @@ namespace <#= NamespaceName #>
 <#      } #>
 <# } #>
 
-		private <#= ViewModelClassName #> _model;
-		private CompositeDisposable _oneInitDisposable;
+		private <#= ViewModelClassName #>? _model;
+		private CompositeDisposable? _oneInitDisposable;
         private ChangeCheckedValue<bool> _isInitiated;
 
 		public void Init(<#= ViewModelClassName #> model)
