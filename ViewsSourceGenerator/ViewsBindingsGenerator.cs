@@ -37,24 +37,7 @@ namespace ViewsSourceGenerator
         
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForPostInitialization(OnPostInitialization);
             context.RegisterForSyntaxNotifications(() => new ViewClassSyntaxReceiver());
-        }
-
-        private static void OnPostInitialization(GeneratorPostInitializationContext context)
-        {
-            /*context.AddSource(ViewModelMethodCallAttributeTemplate.SourceFileName, new ViewModelMethodCallAttributeTemplate().TransformText());
-            context.AddSource(ViewModelGenerateAttributeTemplate.SourceFileName, new ViewModelGenerateAttributeTemplate().TransformText());
-            context.AddSource(LocalizeWithKeyAttributeTemplate.SourceFileName, new LocalizeWithKeyAttributeTemplate().TransformText());
-            context.AddSource(LocalizeWithKeyFromFieldAttributeTemplate.SourceFileName, new LocalizeWithKeyFromFieldAttributeTemplate().TransformText());
-            context.AddSource(SubscribeOnViewModelsObservableAttributeTemplate.SourceFileName, new SubscribeOnViewModelsObservableAttributeTemplate().TransformText());
-            context.AddSource(BindToObservableAttributeTemplate.SourceFileName, new BindToObservableAttributeTemplate().TransformText());
-            context.AddSource(BindingTypeEnumTemplate.SourceFileName, new BindingTypeEnumTemplate().TransformText());
-            context.AddSource(AutoCreationFlagEnumTemplate.SourceFileName, new AutoCreationFlagEnumTemplate().TransformText());
-            context.AddSource(GeneratedViewModelAttributeTemplate.SourceFileName, new GeneratedViewModelAttributeTemplate().TransformText());
-            context.AddSource(SubViewAttributeTemplate.SourceFileName, new SubViewAttributeTemplate().TransformText());
-            context.AddSource(CommonModelAttributeTemplate.SourceFileName, new CommonModelAttributeTemplate().TransformText());*/
-            
         }
 
         public void Execute(GeneratorExecutionContext context)
