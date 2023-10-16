@@ -207,6 +207,7 @@ namespace ViewsSourceGenerator
                 result.AddRange(middleResult);
             }
             
+            result.Add("using System;");
             result.Add("using UniRx;");
             result = result.Distinct(StringComparer.Ordinal).ToList();
 
