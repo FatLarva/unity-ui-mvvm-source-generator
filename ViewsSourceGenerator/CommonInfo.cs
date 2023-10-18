@@ -14,6 +14,8 @@ namespace ViewsSourceGenerator
         public readonly SubscribeOnObservableInfo[] MethodForAutoSubscription;
         public readonly ObservableBindingInfo[] ObservablesBindings;
 
+        public bool IsNeedLocalization => LocalizationFieldInfos.Length > 0 || KeyFromFieldLocalizationFieldInfos.Length > 0;
+        
         public CommonInfo(string viewModelClassName, string viewModelNamespaceName,
             INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol? viewModelTypeSymbol,
             ButtonMethodCallInfo[] methodsToCall,

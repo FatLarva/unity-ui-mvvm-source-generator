@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace ViewsSourceGenerator
 {
@@ -7,6 +8,8 @@ namespace ViewsSourceGenerator
         private string ClassName { get; }
 
         private string NamespaceName { get; }
+        
+        private string[] Usings { get; }
 
         private ButtonMethodCallInfo[] ButtonMethodCallInfos { get; }
 
@@ -34,6 +37,7 @@ namespace ViewsSourceGenerator
             LocalizableFieldInfo[] localizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
+            string[] usings,
             bool shouldImplementDisposeInterface)
         {
             ClassName = className;
@@ -42,6 +46,7 @@ namespace ViewsSourceGenerator
             LocalizationFieldInfos = localizationFieldInfos;
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
+            Usings = usings;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;
         }
 

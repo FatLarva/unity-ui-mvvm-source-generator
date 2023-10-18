@@ -170,50 +170,6 @@ namespace ViewsSourceGenerator
             context.ReportDiagnostic(diagnostic1);*/
         }
 
-        private void GenerateModel(in GeneratorExecutionContext context, INamedTypeSymbol modelTypeSymbol)
-        {
-            var className = modelTypeSymbol.Name;
-            var namespaceName = modelTypeSymbol.GetFullNamespace();
-            bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(modelTypeSymbol);
-            ModelObservableInfo[] modelObservableInfos = GetModelObservableInfos(context, modelTypeSymbol);
-            var usings = GetUsings(modelTypeSymbol);
-            
-            var classTemplate = new ModelClassTemplate(
-                className,
-                namespaceName,
-                modelObservableInfos,
-                usings,
-                shouldImplementDisposeInterface);
-            
-            var classFileName = $"{className}_g.cs";
-                
-            context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
-        }
-
-        private static List<string> GetUsings(INamedTypeSymbol modelTypeSymbol)
-        {
-            var result = new List<string>(20);
-            
-            foreach (var declarationReference in modelTypeSymbol.DeclaringSyntaxReferences)
-            {
-                SyntaxTree syntaxTree = declarationReference.SyntaxTree;
-                SyntaxNode root = syntaxTree.GetRoot();
-
-                var middleResult = root
-                    .DescendantNodes()
-                    .OfType<UsingDirectiveSyntax>()
-                    .Select(usingDirective => usingDirective.ToFullString().TrimEnd());
-                
-                result.AddRange(middleResult);
-            }
-            
-            result.Add("using System;");
-            result.Add("using UniRx;");
-            result = result.Distinct(StringComparer.Ordinal).ToList();
-
-            return result;
-        }
-
         private CommonInfo GatherCommonInfo(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName, string viewModelNamespaceName)
         {
             INamedTypeSymbol? viewModelTypeSymbol = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
@@ -242,6 +198,13 @@ namespace ViewsSourceGenerator
             LocalizableFieldInfo[] localizationInfos = commonInfo.LocalizationFieldInfos
                 .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
                 .ToArray();
+
+            var needLocalization = commonInfo.IsNeedLocalization;
+            var requiredUsings = needLocalization
+                                     ? new[] { "System", "UniRx", "UnityEngine", "ViewModelGeneration", "LocalizationInterface" }
+                                     : new[] { "System", "UniRx", "UnityEngine", "ViewModelGeneration" };
+
+            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings);
             
             var classTemplate = new ViewModelClassTemplate(
                 commonInfo.ViewModelClassName,
@@ -250,6 +213,7 @@ namespace ViewsSourceGenerator
                 localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
+                usings,
                 shouldImplementDisposeInterface);
             
             var classFileName = $"{commonInfo.ViewModelClassName}_g.cs";
@@ -267,6 +231,9 @@ namespace ViewsSourceGenerator
                 .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
                 .ToArray();
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
+
+            var requiredUsings = new[] { "System", "UniRx", "Tools", "UnityEngine", "ViewModelGeneration" };
+            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -276,13 +243,34 @@ namespace ViewsSourceGenerator
                 localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
-                subViewInfos);
+                subViewInfos,
+                usings);
             var classFileName = $"{viewClassName}_g.cs";
                 
             context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
             
             /*var diagnostic = Diagnostic.Create(GetDiagnostic($"So far so good: {viewClassName}  {viewNamespaceName}"), null);
             context.ReportDiagnostic(diagnostic);*/
+        }
+        
+        private void GenerateModel(in GeneratorExecutionContext context, INamedTypeSymbol modelTypeSymbol)
+        {
+            var className = modelTypeSymbol.Name;
+            var namespaceName = modelTypeSymbol.GetFullNamespace();
+            bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(modelTypeSymbol);
+            ModelObservableInfo[] modelObservableInfos = GetModelObservableInfos(context, modelTypeSymbol);
+            var usings = GetUsings(modelTypeSymbol, new []{ "System", "UniRx" });
+            
+            var classTemplate = new ModelClassTemplate(
+                className,
+                namespaceName,
+                modelObservableInfos,
+                usings,
+                shouldImplementDisposeInterface);
+            
+            var classFileName = $"{className}_g.cs";
+                
+            context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
         }
 
         private SubViewInfo[] GetSubViewInfos(INamedTypeSymbol typeSymbol)
@@ -359,6 +347,38 @@ namespace ViewsSourceGenerator
                     return (true, new LocalizableFieldInfo(fieldName, finalLocalizationKey, isLocalizePlaceholder, localizationKeyProvideFieldName));
                 }, attributeName, isFromField)
                 .ToArray();
+
+            return result;
+        }
+        
+        private static string[] GetUsings(ITypeSymbol? modelTypeSymbol, IEnumerable<string> requiredUsings)
+        {
+            if (modelTypeSymbol == null)
+            {
+                return Array.Empty<string>();
+            }
+            
+            var resultList = new List<string>(20);
+            
+            foreach (var declarationReference in modelTypeSymbol.DeclaringSyntaxReferences)
+            {
+                SyntaxTree syntaxTree = declarationReference.SyntaxTree;
+                SyntaxNode root = syntaxTree.GetRoot();
+
+                var middleResult = root
+                    .DescendantNodes()
+                    .OfType<UsingDirectiveSyntax>()
+                    .Select(usingDirective => usingDirective.ToFullString().TrimEnd());
+                
+                resultList.AddRange(middleResult);
+            }
+
+            foreach (var requiredUsing in requiredUsings)
+            {
+                resultList.Add($"using {requiredUsing};");
+            }
+            
+            var result = resultList.Distinct(StringComparer.Ordinal).ToArray();
 
             return result;
         }

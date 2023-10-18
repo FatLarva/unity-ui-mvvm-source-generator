@@ -12,11 +12,9 @@
 // ------------------------------------------------------------------------------
 #nullable enable
 
-using System;
-using UniRx;
-using Tools;
-using UnityEngine;
-using ViewModelGeneration;
+<#	foreach (var oneUsing in Usings) { #>
+<#= oneUsing#>
+<#  } #>
 
 <#if (HasNamespace) {#>
 namespace <#= NamespaceName #>
