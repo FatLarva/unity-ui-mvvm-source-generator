@@ -11,7 +11,7 @@ namespace ViewsSourceGenerator
 
         private ModelObservableInfo[] ModelObservableInfos { get; }
         
-        private List<string> Usings { get; }
+        private string[] Usings { get; }
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -23,7 +23,7 @@ namespace ViewsSourceGenerator
             string className,
             string namespaceName,
             ModelObservableInfo[] modelObservableInfos,
-            List<string> usings,
+            string[] usings,
             bool shouldImplementDisposeInterface)
         {
             ClassName = className;

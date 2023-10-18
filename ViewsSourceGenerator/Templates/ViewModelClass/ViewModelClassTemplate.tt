@@ -14,11 +14,9 @@
 // ------------------------------------------------------------------------------
 #nullable enable
 
-using System;
-using ViewModelGeneration;
-using UniRx;
-using UnityEngine;
-<#= NeedLocalization ? "using LocalizationInterface;" : "" #>
+<#	foreach (var oneUsing in Usings) { #>
+<#= oneUsing#>
+<#  } #>
 
 <# if (HasNamespace) { #>
 namespace <#= NamespaceName #>

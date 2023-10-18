@@ -7,6 +7,8 @@
         private string ViewModelClassName { get; }
 
         private string NamespaceName { get; }
+        
+        private string[] Usings { get; }
 
         private ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
         
@@ -28,7 +30,8 @@
             LocalizableFieldInfo[] localizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
-            SubViewInfo[] subViewInfos)
+            SubViewInfo[] subViewInfos,
+            string[] usings)
         {
             ClassName = className;
             ViewModelClassName = viewModelClassName;
@@ -38,6 +41,7 @@
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
             SubViewInfos = subViewInfos;
+            Usings = usings;
         }
     }
 }
