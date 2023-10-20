@@ -6,6 +6,11 @@ namespace ViewsSourceGenerator.Extensions
     {
         public static string GetFullNamespace(this INamedTypeSymbol namedTypeSymbol)
         {
+            return GetFullNamespace(namedTypeSymbol as ITypeSymbol);
+        }
+        
+        public static string GetFullNamespace(this ITypeSymbol namedTypeSymbol)
+        {
             INamespaceSymbol namespaceSymbol = namedTypeSymbol.ContainingNamespace;
             if (namespaceSymbol.IsGlobalNamespace)
             {
