@@ -176,7 +176,7 @@ namespace ViewsSourceGenerator
             ButtonMethodCallInfo[] methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol, viewModelTypeSymbol);
             LocalizableFieldInfo[] localizationFieldInfos = GetLocalizableFieldInfos(viewTypeSymbol);
             LocalizableFieldInfo[] localizableByKeyFromFieldInfos = GetLocalizableByKeyFromFieldInfos(viewTypeSymbol);
-            SubscribeOnObservableInfo[] methodForAutoSubscription = GetMethodsForAutoSubscription(viewTypeSymbol);
+            (string[] additionalUsings, SubscribeOnObservableInfo[] methodForAutoSubscription) = GetMethodsForAutoSubscription(viewTypeSymbol);
             ObservableBindingInfo[] observablesBindings = GetObservablesBindingsInfos(viewTypeSymbol);
 
             return new CommonInfo(
@@ -188,7 +188,8 @@ namespace ViewsSourceGenerator
                 localizationFieldInfos,
                 localizableByKeyFromFieldInfos,
                 methodForAutoSubscription,
-                observablesBindings);
+                observablesBindings,
+                additionalUsings);
         }
 
         private void GenerateViewModel(in GeneratorExecutionContext context, in CommonInfo commonInfo)
@@ -204,7 +205,7 @@ namespace ViewsSourceGenerator
                                      ? new[] { "System", "UniRx", "UnityEngine", "ViewModelGeneration", "LocalizationInterface" }
                                      : new[] { "System", "UniRx", "UnityEngine", "ViewModelGeneration" };
 
-            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings);
+            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
             
             var classTemplate = new ViewModelClassTemplate(
                 commonInfo.ViewModelClassName,
@@ -233,7 +234,7 @@ namespace ViewsSourceGenerator
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
 
             var requiredUsings = new[] { "System", "UniRx", "Tools", "UnityEngine", "ViewModelGeneration" };
-            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings);
+            var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
             
             var classTemplate = new ViewClassTemplate(
                 viewClassName,
@@ -259,7 +260,8 @@ namespace ViewsSourceGenerator
             var namespaceName = modelTypeSymbol.GetFullNamespace();
             bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(modelTypeSymbol);
             ModelObservableInfo[] modelObservableInfos = GetModelObservableInfos(context, modelTypeSymbol);
-            var usings = GetUsings(modelTypeSymbol, new []{ "System", "UniRx" });
+            var requiredUsings = new[] { "System", "UniRx" };
+            var usings = GetUsings(modelTypeSymbol, requiredUsings, Array.Empty<string>());
             
             var classTemplate = new ModelClassTemplate(
                 className,
@@ -351,7 +353,7 @@ namespace ViewsSourceGenerator
             return result;
         }
         
-        private static string[] GetUsings(ITypeSymbol? modelTypeSymbol, IEnumerable<string> requiredUsings)
+        private static string[] GetUsings(ITypeSymbol? modelTypeSymbol, IEnumerable<string> requiredUsings, IEnumerable<string> additionalUsings)
         {
             if (modelTypeSymbol == null)
             {
@@ -374,6 +376,11 @@ namespace ViewsSourceGenerator
             }
 
             foreach (var requiredUsing in requiredUsings)
+            {
+                resultList.Add($"using {requiredUsing};");
+            }
+            
+            foreach (var requiredUsing in additionalUsings)
             {
                 resultList.Add($"using {requiredUsing};");
             }
@@ -468,18 +475,17 @@ namespace ViewsSourceGenerator
             return attributeData;
         }
 
-        private SubscribeOnObservableInfo[] GetMethodsForAutoSubscription(INamedTypeSymbol typeSymbol)
+        private (string[] additionalUsings, SubscribeOnObservableInfo[] infos) GetMethodsForAutoSubscription(INamedTypeSymbol typeSymbol)
         {
             try
             {
-                var attributeName = SubscribeOnViewModelsObservableAttributeTemplate.AttributeName;
-                
-                var result = typeSymbol
+                var intermediateResult = typeSymbol
                     .GetMembers()
                     .OfType<IMethodSymbol>()
-                    .SelectWhere((methodSymbol, attrName) =>
+                    .SelectWhere(methodSymbol =>
                     {
-                        var attributeData = GetSingleAttributeData(attrName, methodSymbol);
+                        var attributeName = SubscribeOnViewModelsObservableAttributeTemplate.AttributeName;
+                        var attributeData = GetSingleAttributeData(attributeName, methodSymbol);
 
                         if (attributeData == null)
                         {
@@ -498,22 +504,47 @@ namespace ViewsSourceGenerator
                         }
 
                         var methodName = methodSymbol.Name;
-                        var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type.Name : "Unit";
+                        var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type : null;
+                        var methodArgumentTypeName = methodArgumentType?.Name ?? "Unit";
 
-                        var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                        var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentTypeName);
                         
-                        return (true, new SubscribeOnObservableInfo(methodName, autoCreationInfo));
-                    }, attributeName)
-                    .ToArray();
+                        return (true, (new SubscribeOnObservableInfo(methodName, autoCreationInfo), methodArgumentType));
+                    }).ToArray();
 
-                return result;
+                string[] additionalUsings = intermediateResult
+                    .SelectWhere(tuple =>
+                    {
+                        var argType = tuple.methodArgumentType;
+                        if (argType == null)
+                        {
+                            return (false, string.Empty);
+                        }
+
+                        if (argType.SpecialType != SpecialType.None)
+                        {
+                            return (false, string.Empty);
+                        }
+
+                        var typeNamespace = argType.GetFullNamespace();
+                        if (string.IsNullOrEmpty(typeNamespace))
+                        {
+                            return (false, string.Empty);
+                        }
+                        
+                        return (true, typeNamespace);
+                    }).ToArray();
+                
+                var infos = intermediateResult.Select(tuple => tuple.Item1).ToArray();
+                
+                return (additionalUsings, infos);
             }
             catch (Exception e)
             {
-                Console.Out.WriteLine(e);
+                Console.Error.WriteLine(e);
             }
             
-            return Array.Empty<SubscribeOnObservableInfo>();
+            return (Array.Empty<string>(), Array.Empty<SubscribeOnObservableInfo>());
         }
         
         private ModelObservableInfo[] GetModelObservableInfos(GeneratorExecutionContext context, INamedTypeSymbol typeSymbol)
