@@ -56,10 +56,18 @@ namespace ViewsSourceGenerator
             StreamWriter? fileStream = null;
             if (IsConsoleOutputRedirected)
             {
-                fileStream = new StreamWriter(OutputFile, true);
-                
-                Console.SetOut(fileStream);
-                Console.SetError(fileStream);
+                var folderPath = Path.GetDirectoryName(OutputFile);
+                if (!string.IsNullOrEmpty(folderPath))
+                {
+                    if (!Directory.Exists(folderPath))
+                    {
+                        Directory.CreateDirectory(folderPath);
+                    }
+                    fileStream = new StreamWriter(OutputFile, true);
+                    
+                    Console.SetOut(fileStream);
+                    Console.SetError(fileStream);
+                }
             }
 
             const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
@@ -122,8 +130,11 @@ namespace ViewsSourceGenerator
 
             if (IsConsoleOutputRedirected)
             {
-                fileStream?.Close();
-                Console.SetOut(new StreamWriter(Console.OpenStandardOutput()));
+                if (fileStream != null)
+                {
+                    fileStream.Close();
+                    Console.SetOut(new StreamWriter(Console.OpenStandardOutput()));
+                }
             }
         }
 
