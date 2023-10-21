@@ -170,8 +170,13 @@
       </None>
     </ItemGroup>
 
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+      <Exec Command="dotnet exec $(ConstGenerator) -m $(ConsoleOutputFile)" />
+    </Target>
+  
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
       <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(UnityDestination)" />
+      <Exec Command="dotnet exec $(ConstGenerator) -r" />
     </Target>
 
 </Project>

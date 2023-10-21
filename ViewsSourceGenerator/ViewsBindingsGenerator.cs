@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -18,6 +19,9 @@ namespace ViewsSourceGenerator
     [Generator]
     internal class ViewsBindingsGenerator : ISourceGenerator
     {
+        private const string OutputFile = BuildTimeConstants.OutputFile;
+        private static readonly bool IsConsoleOutputRedirected = !string.IsNullOrEmpty(OutputFile);
+        
         private const string DiagnosticId = "ViewsBindingsGenerator";
         private const string Category = "InitializationSafety";
         private const string HelpLinkUri = "";
@@ -34,6 +38,8 @@ namespace ViewsSourceGenerator
                 description: message,
                 helpLinkUri: HelpLinkUri);
         }
+
+        private static readonly SymbolDisplayFormat DefaultSymbolDisplayFormat = new(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly);
         
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -46,7 +52,16 @@ namespace ViewsSourceGenerator
             {
                 return;
             }
-            
+
+            StreamWriter? fileStream = null;
+            if (IsConsoleOutputRedirected)
+            {
+                fileStream = new StreamWriter(OutputFile, true);
+                
+                Console.SetOut(fileStream);
+                Console.SetError(fileStream);
+            }
+
             const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
             INamedTypeSymbol? localizationProviderInterfaceSymbol = context.Compilation.GetTypeByMetadataName(localizationProviderClassName);
             
@@ -104,6 +119,12 @@ namespace ViewsSourceGenerator
                 Console.Out.WriteLine($"Models source generation took {sw.ElapsedMilliseconds}ms");
                 sw.Stop();
             }
+
+            if (IsConsoleOutputRedirected)
+            {
+                fileStream?.Close();
+                Console.SetOut(new StreamWriter(Console.OpenStandardOutput()));
+            }
         }
 
         private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol)
@@ -140,31 +161,7 @@ namespace ViewsSourceGenerator
         
         private void ProcessModel(in GeneratorExecutionContext context, INamedTypeSymbol modelTypeSymbol)
         {
-            var attribute = GetSingleAttributeData(CommonModelAttributeTemplate.AttributeName, modelTypeSymbol);
-            
-            /*if (!TryGetNamedArgumentValue(attribute.NamedArguments, "ViewModelClassName", out string viewModelClassName))
-            {
-                viewModelClassName = viewTypeSymbol.Name + "Model";
-            }
-            
-            if (!TryGetNamedArgumentValue(attribute.NamedArguments, "ViewModelNamespaceName", out string viewModelNamespaceName))
-            {
-                viewModelNamespaceName = GetFullNamespace(viewTypeSymbol);
-            }
-
-            if (!TryGetNamedArgumentValue(attribute.NamedArguments, "SkipViewModelGeneration", out bool skipViewModelGeneration))
-            {
-                skipViewModelGeneration = false;
-            }*/
-
             GenerateModel(in context, modelTypeSymbol);
-            
-            /*var commonInfo = GatherCommonInfo(in context, viewTypeSymbol, viewModelClassName, viewModelNamespaceName);
-            
-            if (!skipViewModelGeneration)
-            {
-                GenerateModel(in context, in commonInfo);
-            }*/
 
             /*var diagnostic1 = Diagnostic.Create(GetDiagnostic($"Type that needed ViewModel: {attribute.NamedArguments.Length}"), null);
             context.ReportDiagnostic(diagnostic1);*/
@@ -505,7 +502,7 @@ namespace ViewsSourceGenerator
 
                         var methodName = methodSymbol.Name;
                         var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type : null;
-                        var methodArgumentTypeName = methodArgumentType?.Name ?? "Unit";
+                        var methodArgumentTypeName = methodArgumentType?.ToDisplayString(DefaultSymbolDisplayFormat) ?? "Unit";
 
                         var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentTypeName);
                         
@@ -520,7 +517,16 @@ namespace ViewsSourceGenerator
                         {
                             return (false, string.Empty);
                         }
-
+                        
+                        if (argType.SpecialType == SpecialType.System_Nullable_T || argType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                        {
+                            argType = ((INamedTypeSymbol)argType).TypeArguments[0];
+                        }
+                        else if (argType is INamedTypeSymbol { Arity: > 0, NullableAnnotation: NullableAnnotation.Annotated } namedArgType)
+                        {
+                            argType = namedArgType.TypeArguments[0];
+                        }
+                        
                         if (argType.SpecialType != SpecialType.None)
                         {
                             return (false, string.Empty);
@@ -612,7 +618,7 @@ namespace ViewsSourceGenerator
         {
             var comparer = SymbolEqualityComparer.Default;
             
-            if (observableGenericType is INamedTypeSymbol namedType)
+            /*if (observableGenericType is INamedTypeSymbol namedType)
             {
                 var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(namedType);
                 var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(namedType);
@@ -620,22 +626,29 @@ namespace ViewsSourceGenerator
                 var isValid = comparer.Equals(propertyType, observableType);
                 isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
-                name = namedType.Name;
+                if (namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                {
+                    name = namedType.TypeArguments[0].Name + "?";
+                }
+                else
+                {
+                    name = namedType.Name;
+                }
                 
                 return isValid;
             }
             else
-            {
+            {*/
                 var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
                 var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
             
                 var isValid = comparer.Equals(propertyType, observableType);
                 isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
-                name = observableGenericType.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly));
-                
+                name = observableGenericType.ToDisplayString(DefaultSymbolDisplayFormat);
+
                 return isValid;
-            }
+            // }
         }
 
         private static bool TryGetDelayFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out ObservableBindingDelaySettings? delaySettings)
