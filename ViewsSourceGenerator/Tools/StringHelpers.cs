@@ -6,6 +6,11 @@ namespace ViewsSourceGenerator.Tools
     {
         public static string NormalizeSlashes(this string pathToNormalize, char targetSlash)
         {
+            if (string.IsNullOrEmpty(pathToNormalize))
+            {
+                return string.Empty;
+            }
+            
             if (targetSlash == '/')
             {
                 return pathToNormalize.Replace('\\', '/');
@@ -18,16 +23,31 @@ namespace ViewsSourceGenerator.Tools
 
         public static string Capitalize(this string sourceString)
         {
+            if (string.IsNullOrEmpty(sourceString))
+            {
+                return string.Empty;
+            }
+            
             return char.ToUpperInvariant(sourceString[0]) + sourceString.Substring(1);
         }
         
         public static string Decapitalize(this string sourceString)
         {
+            if (string.IsNullOrEmpty(sourceString))
+            {
+                return string.Empty;
+            }
+            
             return char.ToLowerInvariant(sourceString[0]) + sourceString.Substring(1);
         }
         
         public static string Camel(this string sourceString)
         {
+            if (string.IsNullOrEmpty(sourceString))
+            {
+                return string.Empty;
+            }
+            
             return sourceString[0] == '_' ? sourceString : '_' + sourceString;
         }
         
