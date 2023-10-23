@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -20,7 +19,6 @@ namespace ViewsSourceGenerator
     internal class ViewsBindingsGenerator : ISourceGenerator
     {
         private const string OutputFile = BuildTimeConstants.OutputFile;
-        private static readonly bool IsConsoleOutputRedirected = !string.IsNullOrEmpty(OutputFile);
         
         private const string DiagnosticId = "ViewsBindingsGenerator";
         private const string Category = "InitializationSafety";
@@ -53,88 +51,78 @@ namespace ViewsSourceGenerator
                 return;
             }
 
-            StreamWriter? fileStream = null;
-            if (IsConsoleOutputRedirected)
-            {
-                var folderPath = Path.GetDirectoryName(OutputFile);
-                if (!string.IsNullOrEmpty(folderPath))
-                {
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Directory.CreateDirectory(folderPath);
-                    }
-                    fileStream = new StreamWriter(OutputFile, true);
-                    
-                    Console.SetOut(fileStream);
-                    Console.SetError(fileStream);
-                }
-            }
+            using var outputRedirector = new OutputRedirector(OutputFile);
 
             const string localizationProviderClassName = "LocalizationInterface.ILocalizationProvider";
             INamedTypeSymbol? localizationProviderInterfaceSymbol = context.Compilation.GetTypeByMetadataName(localizationProviderClassName);
-            
+        
             if (localizationProviderInterfaceSymbol == null)
             {
                 var diagnostic = Diagnostic.Create(GetDiagnostic($"{localizationProviderClassName} should exist."), null);
                 context.ReportDiagnostic(diagnostic);
-                
+            
                 return;
             }
-            
+        
             if (receiver.IsEligibleForViewClassesProcessing)
             {
                 var sw = Stopwatch.StartNew();
 
                 /*var views = receiver.ViewsClassesToProcess.ToArray();
 
-                var taskOne = Task.Run(() =>
+            var taskOne = Task.Run(() =>
+            {
+                for (int i = 0; i < views.Length / 2; i++)
                 {
-                    for (int i = 0; i < views.Length / 2; i++)
-                    {
-                        ProcessView(in context, views[i]);
-                    }
-                });
-                
-                var taskTwo = Task.Run(() =>
-                {
-                    for (int i = views.Length / 2; i < views.Length; i++)
-                    {
-                        ProcessView(in context, views[i]);
-                    }
-                });
-                
-                Task.WaitAll(taskOne, taskTwo);
-                */
-                
-                foreach (var viewClass in receiver.ViewsClassesToProcess)
-                {
-                    ProcessView(in context, viewClass);
+                    ProcessView(in context, views[i]);
                 }
-                
+            });
+            
+            var taskTwo = Task.Run(() =>
+            {
+                for (int i = views.Length / 2; i < views.Length; i++)
+                {
+                    ProcessView(in context, views[i]);
+                }
+            });
+            
+            Task.WaitAll(taskOne, taskTwo);
+            */
+            
+                try
+                {
+                    foreach (var viewClass in receiver.ViewsClassesToProcess)
+                    {
+                        ProcessView(in context, viewClass);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine(exception);
+                }
+            
                 Console.Out.WriteLine($"ViewModel source generation took {sw.ElapsedMilliseconds}ms");
                 sw.Stop();
             }
-            
+        
             if (receiver.IsEligibleForModelClassesProcessing)
             {
                 var sw = Stopwatch.StartNew();
 
-                foreach (var modelClass in receiver.ModelsClassesToProcess)
+                try
                 {
-                    ProcessModel(in context, modelClass);
+                    foreach (var modelClass in receiver.ModelsClassesToProcess)
+                    {
+                        ProcessModel(in context, modelClass);
+                    }
                 }
-                
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine(exception);
+                }
+            
                 Console.Out.WriteLine($"Models source generation took {sw.ElapsedMilliseconds}ms");
                 sw.Stop();
-            }
-
-            if (IsConsoleOutputRedirected)
-            {
-                if (fileStream != null)
-                {
-                    fileStream.Close();
-                    Console.SetOut(new StreamWriter(Console.OpenStandardOutput()));
-                }
             }
         }
 
