@@ -11,5 +11,6 @@
         Enabled,
         Interactable,
         Alpha,
+        EffectColor,
     }
 }

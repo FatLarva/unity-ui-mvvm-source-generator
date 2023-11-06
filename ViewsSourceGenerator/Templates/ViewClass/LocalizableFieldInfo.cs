@@ -2,27 +2,21 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct LocalizableFieldInfo
     {
-        public readonly string LocalizationKey;
-        private readonly string _viewFieldName;
-        private readonly bool _isLocalizePlaceholder;
-        private readonly string _keyProviderFieldName;
-
-        public LocalizableFieldInfo(string viewFieldName, string localizationKey, bool isLocalizePlaceholder, string keyProviderFieldName)
-        {
-            LocalizationKey = localizationKey;
-            _viewFieldName = viewFieldName;
-            _isLocalizePlaceholder = isLocalizePlaceholder;
-            _keyProviderFieldName = keyProviderFieldName;
-        }
+        public string LocalizationKey { get; init; }
+        public string ViewFieldName  { get; init; }
+        public bool IsLocalizePlaceholder  { get; init; }
+        public string KeyProviderFieldName  { get; init; }
+        public bool CheckForNull { get; init; }
 
         public string PathToLocalizableText => 
-            _isLocalizePlaceholder ?
-                $"{_viewFieldName}.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text" :
-                $"{_viewFieldName}.text";
+            IsLocalizePlaceholder ?
+                $"{ViewFieldName}.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text" :
+                $"{ViewFieldName}.text";
+
 
         public string GetLocalizationKey()
         {
-            return string.IsNullOrEmpty(_keyProviderFieldName) ? $"\"{LocalizationKey}\"" : $"{_keyProviderFieldName}";
+            return string.IsNullOrEmpty(KeyProviderFieldName) ? $"\"{LocalizationKey}\"" : $"{KeyProviderFieldName}";
         }
     }
 }

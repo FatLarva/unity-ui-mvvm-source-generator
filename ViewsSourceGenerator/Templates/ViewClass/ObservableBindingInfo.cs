@@ -7,6 +7,8 @@ namespace ViewsSourceGenerator
         private readonly string _fieldName;
         private readonly BindingType _bindingType;
         private readonly bool _isInversed;
+        private readonly bool _isCollection;
+        private readonly bool _shouldCheckForNull;
         private readonly ObservableBindingDelaySettings? _delaySettings;
         private readonly AutoCreationInfo _autoCreationInfo;
 
@@ -19,12 +21,16 @@ namespace ViewsSourceGenerator
         public bool HasPublicCreations => _autoCreationInfo.HasPublicCreations;
 
         public bool HasObservablesToDispose => HasPrivateCreations;
+        public string FieldName => _fieldName;
+        public bool CheckForNull => _shouldCheckForNull;
 
-        public ObservableBindingInfo(string fieldName, BindingType bindingType, bool isInversed, ObservableBindingDelaySettings? delaySettings, AutoCreationInfo autoCreationInfo)
+        public ObservableBindingInfo(string fieldName, BindingType bindingType, bool isInversed, bool isCollection, bool shouldCheckForNull, ObservableBindingDelaySettings? delaySettings, AutoCreationInfo autoCreationInfo)
         {
             _fieldName = fieldName;
             _bindingType = bindingType;
             _isInversed = isInversed;
+            _isCollection = isCollection;
+            _shouldCheckForNull = shouldCheckForNull;
             _delaySettings = delaySettings;
             _autoCreationInfo = autoCreationInfo;
         }
@@ -37,65 +43,84 @@ namespace ViewsSourceGenerator
 
         public string GenerateAssignment(string observedValueName)
         {
-            if (_isInversed)
+            if (_isCollection)
             {
-                return GenerateInversedAssignment(observedValueName);
+                var singleAssignment = GenerateSingleAssignment(observedValueName, "item");
+                return $"foreach (var item in {_fieldName}) {{ {singleAssignment} }}";
             }
             else
             {
-                return GenerateStraightAssignment(observedValueName);
+                return GenerateSingleAssignment(observedValueName);
             }
         }
-        
-        private string GenerateInversedAssignment(string observedValueName)
+
+        private string GenerateSingleAssignment(string observedValueName, string? assigneeName = null)
+        {
+            string nameToUse = assigneeName ?? _fieldName;
+            
+            if (_isInversed)
+            {
+                return GenerateInversedAssignment(observedValueName, nameToUse);
+            }
+            else
+            {
+                return GenerateStraightAssignment(observedValueName, nameToUse);
+            }
+        }
+
+        private string GenerateInversedAssignment(string observedValueName, string nameToUse)
         {
             switch (_bindingType)
             {
                 case BindingType.Text:
-                    return $"{_fieldName}.text = {observedValueName}";
+                    return $"{nameToUse}.text = {observedValueName};";
                 case BindingType.ImageFill:
-                    return $"{_fieldName}.fillAmount = 1 - {observedValueName}";
+                    return $"{nameToUse}.fillAmount = 1 - {observedValueName};";
                 case BindingType.GameObjectActivity:
-                    return $"{_fieldName}.gameObject.SetActive(!{observedValueName})";
+                    return $"{nameToUse}.gameObject.SetActive(!{observedValueName});";
                 case BindingType.Activity:
-                    return $"{_fieldName}.SetActive(!{observedValueName})";
+                    return $"{nameToUse}.SetActive(!{observedValueName});";
                 case BindingType.Color:
-                    return $"{_fieldName}.color = {observedValueName}";
+                    return $"{nameToUse}.color = {observedValueName};";
                 case BindingType.Sprite:
-                    return $"{_fieldName}.sprite = {observedValueName}";
+                    return $"{nameToUse}.sprite = {observedValueName};";
                 case BindingType.Enabled:
-                    return $"{_fieldName}.enabled = !{observedValueName}";
+                    return $"{nameToUse}.enabled = !{observedValueName};";
                 case BindingType.Interactable:
-                    return $"{_fieldName}.interactable = !{observedValueName}";
+                    return $"{nameToUse}.interactable = !{observedValueName};";
                 case BindingType.Alpha:
-                    return $"{_fieldName}.alpha = 1 - {observedValueName}";
+                    return $"{nameToUse}.alpha = 1 - {observedValueName};";
+                case BindingType.EffectColor:
+                    return $"{nameToUse}.effectColor = {observedValueName};";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
         
-        private string GenerateStraightAssignment(string observedValueName)
+        private string GenerateStraightAssignment(string observedValueName, string nameToUse)
         {
             switch (_bindingType)
             {
                 case BindingType.Text:
-                    return $"{_fieldName}.text = {observedValueName}";
+                    return $"{nameToUse}.text = {observedValueName};";
                 case BindingType.ImageFill:
-                    return $"{_fieldName}.fillAmount = {observedValueName}";
+                    return $"{nameToUse}.fillAmount = {observedValueName};";
                 case BindingType.GameObjectActivity:
-                    return $"{_fieldName}.gameObject.SetActive({observedValueName})";
+                    return $"{nameToUse}.gameObject.SetActive({observedValueName});";
                 case BindingType.Activity:
-                    return $"{_fieldName}.SetActive({observedValueName})";
+                    return $"{nameToUse}.SetActive({observedValueName});";
                 case BindingType.Color:
-                    return $"{_fieldName}.color = {observedValueName}";
+                    return $"{nameToUse}.color = {observedValueName};";
                 case BindingType.Sprite:
-                    return $"{_fieldName}.sprite = {observedValueName}";
+                    return $"{nameToUse}.sprite = {observedValueName};";
                 case BindingType.Enabled:
-                    return $"{_fieldName}.enabled = {observedValueName}";
+                    return $"{nameToUse}.enabled = {observedValueName};";
                 case BindingType.Interactable:
-                    return $"{_fieldName}.interactable = {observedValueName}";
+                    return $"{nameToUse}.interactable = {observedValueName};";
                 case BindingType.Alpha:
-                    return $"{_fieldName}.alpha = {observedValueName}";
+                    return $"{nameToUse}.alpha = {observedValueName};";
+                case BindingType.EffectColor:
+                    return $"{nameToUse}.effectColor = {observedValueName};";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
