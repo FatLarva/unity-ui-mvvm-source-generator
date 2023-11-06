@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 
 namespace ViewsSourceGenerator
 {
@@ -11,7 +10,6 @@ namespace ViewsSourceGenerator
             context.RegisterPostInitializationOutput(
                 pIContext =>
                 {
-                    Console.Out.WriteLine($"Hello from Incremental source generator");
                     pIContext.AddSource(ViewModelMethodCallAttributeTemplate.SourceFileName, new ViewModelMethodCallAttributeTemplate().TransformText());
                     pIContext.AddSource(ViewModelGenerateAttributeTemplate.SourceFileName, new ViewModelGenerateAttributeTemplate().TransformText());
                     pIContext.AddSource(LocalizeWithKeyAttributeTemplate.SourceFileName, new LocalizeWithKeyAttributeTemplate().TransformText());

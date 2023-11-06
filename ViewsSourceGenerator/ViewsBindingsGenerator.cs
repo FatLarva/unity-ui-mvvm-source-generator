@@ -18,6 +18,7 @@ namespace ViewsSourceGenerator
     [Generator]
     internal class ViewsBindingsGenerator : ISourceGenerator
     {
+        private const string CanBeNullAttributeName = "CanBeNullAttribute";
         private const string OutputFile = BuildTimeConstants.OutputFile;
         
         private const string DiagnosticId = "ViewsBindingsGenerator";
@@ -341,8 +342,16 @@ namespace ViewsSourceGenerator
 
                     var finalLocalizationKey = isField ? localizationKey + "Meddler" : localizationKey;
                     var localizationKeyProvideFieldName = isField ? localizationKey : string.Empty;
-                    
-                    return (true, new LocalizableFieldInfo(fieldName, finalLocalizationKey, isLocalizePlaceholder, localizationKeyProvideFieldName));
+                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
+
+                    return (true, new LocalizableFieldInfo
+                                {
+                                    ViewFieldName = fieldName,
+                                    IsLocalizePlaceholder = isLocalizePlaceholder,
+                                    LocalizationKey = finalLocalizationKey,
+                                    KeyProviderFieldName = localizationKeyProvideFieldName,
+                                    CheckForNull = shouldCheckForNull,
+                                });
                 }, attributeName, isFromField)
                 .ToArray();
 
@@ -433,12 +442,15 @@ namespace ViewsSourceGenerator
                                                       && !IsPartialMethod(method));
                         shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
                     }
-
+                    
+                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
+                    
                     return (true, new ButtonMethodCallInfo
                         {
                             ButtonFieldName = fieldName,
                             MethodToCall = methodToCallName,
                             ShouldGenerateMethodWithPartialStuff = shouldGenerateMethodWithPartialStuff,
+                            ShouldCheckForNull = shouldCheckForNull,
                             AutoCreationInfo = autoCreationInfo,
                             InactivePeriodMs = clickCooldown,
                         });
@@ -708,59 +720,74 @@ namespace ViewsSourceGenerator
                         return (false, Array.Empty<ObservableBindingInfo>());
                     }
                     
-                    var infos = bindToAttributes
-                        .SelectWhere(
-                            (attribute, field) =>
-                            {
-                                if (!TryGetDelayFromNamedArgument(attribute.NamedArguments, out ObservableBindingDelaySettings? delaySettings))
-                                {
-                                    delaySettings = null;
-                                }
-                                
-                                if (attribute.ConstructorArguments[0].Value is not string { Length: > 0 } observableName)
-                                {
-                                    return (false, default);
-                                }
-                                
-                                if (attribute.ConstructorArguments[1].Value is not int bindingTypeObject)
-                                {
-                                    return (false, default);
-                                }
-
-                                var bindingType = (BindingType)bindingTypeObject;
-                                
-                                var isNegated = false;
-                                
-                                if (observableName.StartsWith("!"))
-                                {
-                                    observableName = observableName.Substring(1);
-                                    isNegated = true;
-                                }
-                                
-                                if (!TryGetNamedArgumentValue(attribute.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
-                                {
-                                    creationFlags = AutoCreationFlag.None;
-                                }
-
-                                AutoCreationInfo autoCreationInfo;
-                                if (creationFlags != AutoCreationFlag.None)
-                                {
-                                    var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
-                                    autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
-                                }
-                                else
-                                {
-                                    autoCreationInfo = AutoCreationInfo.OnlyObservable(observableName);
-                                }
-                                
-                                return (true, new ObservableBindingInfo(field.Name, bindingType, isNegated, delaySettings, autoCreationInfo));
-                            }, fieldSymbol);
+                    var infos = bindToAttributes.SelectWhere(GatherBindingInfo, fieldSymbol);
                     
                     return (true, infos);
                 })
                 .ToArray();
 
             return result;
+
+            (bool include, ObservableBindingInfo result) GatherBindingInfo(AttributeData attribute, IFieldSymbol field)
+            {
+                if (!TryGetDelayFromNamedArgument(attribute.NamedArguments, out ObservableBindingDelaySettings? delaySettings))
+                {
+                    delaySettings = null;
+                }
+
+                if (attribute.ConstructorArguments is not { Length: >= 2 } ctorArgs)
+                {
+                    return (false, default);
+                }
+                
+                if (ctorArgs[0].Value is not string { Length: > 0 } observableName)
+                {
+                    return (false, default);
+                }
+                            
+                if (ctorArgs[1].Value is not int bindingTypeObject)
+                {
+                    return (false, default);
+                }
+
+                var bindingType = (BindingType)bindingTypeObject;
+                            
+                var isNegated = false;
+                            
+                if (observableName.StartsWith("!"))
+                {
+                    observableName = observableName.Substring(1);
+                    isNegated = true;
+                }
+                            
+                if (!TryGetNamedArgumentValue(attribute.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
+                {
+                    creationFlags = AutoCreationFlag.None;
+                }
+
+                AutoCreationInfo autoCreationInfo;
+                if (creationFlags != AutoCreationFlag.None)
+                {
+                    var methodArgumentType = GetObservableTypeFromBindingType(bindingType);
+                    autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentType);
+                }
+                else
+                {
+                    autoCreationInfo = AutoCreationInfo.OnlyObservable(observableName);
+                }
+                            
+                var isCollection = CheckFieldIsCollection(field);
+                var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
+                
+                return (true, new ObservableBindingInfo(field.Name, bindingType, isNegated, isCollection, shouldCheckForNull, delaySettings, autoCreationInfo));
+            }
+        }
+
+        private static bool CheckFieldIsCollection(IFieldSymbol fieldSymbol)
+        {
+            var fieldType = fieldSymbol.Type;
+
+            return fieldType is { TypeKind: TypeKind.Array } or { OriginalDefinition: { SpecialType: SpecialType.System_Collections_Generic_IList_T } };
         }
 
         private static string GetObservableTypeFromBindingType(BindingType bindingType)
@@ -785,6 +812,8 @@ namespace ViewsSourceGenerator
                     return "bool";
                 case BindingType.Alpha:
                     return "float";
+                case BindingType.EffectColor:
+                    return "Color";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(bindingType), bindingType, $"Undefined binding type: {bindingType}");
             }
