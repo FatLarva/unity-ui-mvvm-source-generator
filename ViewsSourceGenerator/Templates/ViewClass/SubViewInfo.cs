@@ -2,22 +2,21 @@
 {
     internal readonly struct SubViewInfo
     {
-        public readonly string ViewFieldName;
-        public readonly string ViewModelFieldName;
-        public readonly bool UseSameViewModel;
+        public string ViewFieldName { get; init; }
+        public string ViewModelFieldName { get; init; }
+        public bool UseSameViewModel { get; init; }
+        public bool CheckForNull { get; init; }
 
-        public SubViewInfo(string viewFieldName, string viewModelFieldName)
+        public string GetInitCall()
         {
-            ViewFieldName = viewFieldName;
-            ViewModelFieldName = viewModelFieldName;
-            UseSameViewModel = default;
+            return UseSameViewModel
+                       ? $"{ViewFieldName}.Init(model);"
+                       : $"{ViewFieldName}.Init(model.{ViewModelFieldName});";
         }
         
-        public SubViewInfo(string viewFieldName, bool useSameViewModel)
+        public string GetDeinitCall()
         {
-            ViewFieldName = viewFieldName;
-            ViewModelFieldName = string.Empty;
-            UseSameViewModel = useSameViewModel;
+            return $"{ViewFieldName}.Deinit();";
         }
     }
 }

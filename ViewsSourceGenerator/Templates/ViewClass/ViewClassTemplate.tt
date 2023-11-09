@@ -44,14 +44,19 @@ namespace <#= NamespaceName #>
 			_oneInitDisposable?.Dispose();
 			_oneInitDisposable = new CompositeDisposable();
 
-<#	foreach (var subViewInfo in SubViewInfos) { #>
-<#		if (subViewInfo.UseSameViewModel) { #>
-			<#=subViewInfo.ViewFieldName#>.Init(model);
-<#      } else { #>
-			<#=subViewInfo.ViewFieldName#>.Init(model.<#=subViewInfo.ViewModelFieldName#>);
-<#      } #>
+			PreManualInit(model);
 
+<#	foreach (var subViewInfo in SubViewInfos) { #>
+<#		if (subViewInfo.CheckForNull) { #>
+			if (<#=subViewInfo.ViewFieldName#> != null)
+			{
+				<#=subViewInfo.GetInitCall()#>
+			}
+<#      } else { #>
+			<#=subViewInfo.GetInitCall()#>
+<#      } #>
 <#  } #>
+
 <#	foreach (var observableBindingInfo in ObservableBindingInfos) { #>
 <#		if (observableBindingInfo.CheckForNull) { #>
 			if (<#=observableBindingInfo.FieldName#> != null)
@@ -125,9 +130,15 @@ namespace <#= NamespaceName #>
 			{
 				return;
 			}
-			
 <#	foreach (var subViewInfo in SubViewInfos) { #>
-			<#=subViewInfo.ViewFieldName#>.Deinit();
+<#		if (subViewInfo.CheckForNull) { #>
+			if (<#=subViewInfo.ViewFieldName#> != null)
+			{
+				<#=subViewInfo.GetDeinitCall()#>
+			}
+<#      } else { #>
+			<#=subViewInfo.GetDeinitCall()#>
+<#      } #>
 <#  } #>
 
 			ManualDeinit();
@@ -147,6 +158,8 @@ namespace <#= NamespaceName #>
 		}
 
 		partial void ManualInit(<#= ViewModelClassName #> model);
+
+		partial void PreManualInit(<#= ViewModelClassName #> model);
 
 		partial void ManualDeinit();
 

@@ -287,9 +287,11 @@ namespace ViewsSourceGenerator
                         return (false, default);
                     }
                     
+                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
+                    
                     if (TryGetNamedArgumentValue(attributeData.NamedArguments, "UseSameViewModel", out bool useSameViewModel) && useSameViewModel)
                     {
-                        return (true, new SubViewInfo(field.Name, true));
+                        return (true, new SubViewInfo { ViewFieldName = field.Name, UseSameViewModel = true, CheckForNull = shouldCheckForNull });
                     }
                                 
                     if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "SubViewModelFieldName", out string? viewModelFieldName))
@@ -297,7 +299,7 @@ namespace ViewsSourceGenerator
                         viewModelFieldName = field.Type.Name + "Model";
                     }
                                 
-                    return (true, new SubViewInfo(field.Name, viewModelFieldName));
+                    return (true, new SubViewInfo { ViewFieldName = field.Name, ViewModelFieldName = viewModelFieldName, CheckForNull = shouldCheckForNull });
                 })
                 .ToArray();
 
