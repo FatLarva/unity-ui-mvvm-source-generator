@@ -50,6 +50,23 @@ namespace ViewsSourceGenerator.Linq
             }
         }
         
+        public static IEnumerable<TResult> SelectWhere<TSource, TResult, TState0, TState1, TState2>(
+            this IEnumerable<TSource> source,
+            Func<TSource, TState0, TState1, TState2, (bool include, TResult result)> selector,
+            TState0 state0,
+            TState1 state1,
+            TState2 state2)
+        {
+            foreach (var item in source)
+            {
+                var (include, result) = selector(item, state0, state1, state2);
+                if (include)
+                {
+                    yield return result;
+                }
+            }
+        }
+        
         public static IEnumerable<TResult> SelectManyWhere<TSource, TResult>(
             this IEnumerable<TSource> source,
             Func<TSource, (bool include, IEnumerable<TResult> results)> selector)

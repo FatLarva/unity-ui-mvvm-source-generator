@@ -14,13 +14,13 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
+namespace <#= StaticConstants.AttributesNamespace #>
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     internal class SubViewAttribute : Attribute
     {
-        public string? SubViewModelFieldName { get; set; }
-        public bool UseSameViewModel { get; set; }
+        public string? <#= SubViewModelFieldNameParameterName #> { get; set; }
+        public bool <#= UseSameViewModelParameterName #> { get; set; }
 
         public SubViewAttribute()
         {

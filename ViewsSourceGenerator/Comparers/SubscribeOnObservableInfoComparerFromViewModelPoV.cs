@@ -13,10 +13,7 @@ namespace ViewsSourceGenerator.Comparers
 
         public int GetHashCode(SubscribeOnObservableInfo obj)
         {
-            unchecked
-            {
-                return (obj.MethodName.GetHashCode() * 397) ^ obj.AutoCreationInfo.GetHashCode();
-            }
+            return obj.AutoCreationInfo.GetHashCode();
         }
     }
 }

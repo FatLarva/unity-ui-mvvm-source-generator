@@ -14,13 +14,13 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
+namespace <#= StaticConstants.AttributesNamespace #>
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     internal class LocalizeWithKeyFromFieldAttribute : Attribute
     {
         public string LocalizationKeyProvidingFieldName { get; }
-        public bool IsLocalizePlaceholder { get; set; }
+        public bool <#= IsLocalizePlaceholderParamName #> { get; set; }
 
         public LocalizeWithKeyFromFieldAttribute(string localizationKeyProvidingFieldName)
         {
