@@ -16,14 +16,14 @@
 
 using System;
 
-namespace <#=StaticConstants.AttributesNamespace#>
+namespace <#= StaticConstants.AttributesNamespace #>
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     internal class ViewModelGenerateAttribute : Attribute
     {
-        public string? ViewModelClassName { get; set; }
-        public string? ViewModelNamespaceName { get; set; }
-        public bool SkipViewModelGeneration { get; set; }
+        public string? <#= ViewModelClassNameParamName #> { get; set; }
+        public string? <#= ViewModelNamespaceNameParamName #> { get; set; }
+        public bool <#= SkipViewModelGenerationParamName #> { get; set; }
 
         public ViewModelGenerateAttribute()
         {

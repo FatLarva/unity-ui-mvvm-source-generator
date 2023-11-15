@@ -142,17 +142,17 @@ namespace ViewsSourceGenerator
         {
             var attribute = GetSingleAttributeData(ViewModelGenerateAttributeTemplate.AttributeName, viewTypeSymbol);
             
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, "ViewModelClassName", out string? viewModelClassName))
+            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelClassNameParamName, out string? viewModelClassName))
             {
                 viewModelClassName = viewTypeSymbol.Name + "Model";
             }
             
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, "ViewModelNamespaceName", out string? viewModelNamespaceName))
+            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelNamespaceNameParamName, out string? viewModelNamespaceName))
             {
                 viewModelNamespaceName = viewTypeSymbol.GetFullNamespace();
             }
 
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, "SkipViewModelGeneration", out bool skipViewModelGeneration))
+            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.SkipViewModelGenerationParamName, out bool skipViewModelGeneration))
             {
                 skipViewModelGeneration = false;
             }
@@ -202,13 +202,25 @@ namespace ViewsSourceGenerator
 
         private void GenerateViewModel(in GeneratorExecutionContext context, in ViewModelGenerationInfo viewModelInfo)
         {
+            var creationInfosFromObservables = viewModelInfo
+                .ObservableBindingInfos
+                .Select(o => o.AutoCreationInfo);
+            
+            var creationInfosFromSubscribes = viewModelInfo
+                .SubscribeInfos
+                .Select(o => o.AutoCreationInfo);
+
+            var overallCreationInfos = creationInfosFromObservables
+                .Concat(creationInfosFromSubscribes)
+                .Distinct()
+                .ToArray();
+            
             var classTemplate = new ViewModelClassTemplate(
                 viewModelInfo.ClassName,
                 viewModelInfo.NamespaceName,
                 viewModelInfo.ButtonMethodInfos,
                 viewModelInfo.LocalizationInfos,
-                viewModelInfo.SubscribeInfos,
-                viewModelInfo.ObservableBindingInfos,
+                overallCreationInfos,
                 viewModelInfo.Usings,
                 viewModelInfo.ShouldImplementDisposeInterface);
             
@@ -336,12 +348,12 @@ namespace ViewsSourceGenerator
                     
                     var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
                     
-                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, "UseSameViewModel", out bool useSameViewModel) && useSameViewModel)
+                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.UseSameViewModelParameterName, out bool useSameViewModel) && useSameViewModel)
                     {
                         return (true, new SubViewInfo { ViewFieldName = field.Name, UseSameViewModel = true, CheckForNull = shouldCheckForNull });
                     }
                                 
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "SubViewModelFieldName", out string? viewModelFieldName))
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.SubViewModelFieldNameParameterName, out string? viewModelFieldName))
                     {
                         viewModelFieldName = field.Type.Name + "Model";
                     }
@@ -355,20 +367,20 @@ namespace ViewsSourceGenerator
 
         private LocalizableFieldInfo[] GetLocalizableFieldInfos(INamedTypeSymbol typeSymbol)
         {
-            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyAttributeTemplate.AttributeName, false);
+            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyAttributeTemplate.AttributeName, LocalizeWithKeyAttributeTemplate.IsLocalizePlaceholderParamName, false);
         }
         
         private LocalizableFieldInfo[] GetLocalizableByKeyFromFieldInfos(INamedTypeSymbol typeSymbol)
         {
-            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyFromFieldAttributeTemplate.AttributeName, true);
+            return GetLocalizableFieldsInfosByAttributeName(typeSymbol, LocalizeWithKeyFromFieldAttributeTemplate.AttributeName, LocalizeWithKeyFromFieldAttributeTemplate.IsLocalizePlaceholderParamName, true);
         }
 
-        private static LocalizableFieldInfo[] GetLocalizableFieldsInfosByAttributeName(INamedTypeSymbol typeSymbol, string attributeName, bool isFromField)
+        private static LocalizableFieldInfo[] GetLocalizableFieldsInfosByAttributeName(INamedTypeSymbol typeSymbol, string attributeName, string parameterName, bool isFromField)
         {
             LocalizableFieldInfo[] result = typeSymbol
                 .GetMembers()
                 .OfType<IFieldSymbol>()
-                .SelectWhere((fieldSymbol, attrName, isField) =>
+                .SelectWhere((fieldSymbol, attrName, paramName, isField) =>
                 {
                     var attributeData = GetSingleAttributeData(attrName, fieldSymbol);
 
@@ -389,7 +401,7 @@ namespace ViewsSourceGenerator
                     
                     var fieldName = fieldSymbol.Name;
                     
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "IsLocalizePlaceholder", out bool isLocalizePlaceholder))
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, paramName, out bool isLocalizePlaceholder))
                     {
                         isLocalizePlaceholder = false;
                     }
@@ -406,7 +418,7 @@ namespace ViewsSourceGenerator
                                     KeyProviderFieldName = localizationKeyProvideFieldName,
                                     CheckForNull = shouldCheckForNull,
                                 });
-                }, attributeName, isFromField)
+                }, attributeName, parameterName, isFromField)
                 .ToArray();
 
             return result;
@@ -451,14 +463,13 @@ namespace ViewsSourceGenerator
 
         private ButtonMethodCallInfo[] GetButtonMethodCallInfo(INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol? viewModelTypeSymbol)
         {
-            var attributeName = ViewModelMethodCallAttributeTemplate.AttributeName;
-            
             ButtonMethodCallInfo[] result = viewTypeSymbol
                 .GetMembers()
                 .OfType<IFieldSymbol>()
-                .SelectWhere((fieldSymbol, attrName, viewModel) =>
+                .SelectWhere((fieldSymbol, viewModel) =>
                 {
-                    var attributeData = GetSingleAttributeData(attrName, fieldSymbol);
+                    var attributeName = ViewModelMethodCallAttributeTemplate.AttributeName;
+                    var attributeData = GetSingleAttributeData(attributeName, fieldSymbol);
 
                     if (attributeData == null)
                     {
@@ -478,13 +489,13 @@ namespace ViewsSourceGenerator
                     var fieldName = fieldSymbol.Name;
                     bool shouldGenerateMethodWithPartialStuff;
 
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, "ClickCooldownMs", out int clickCooldown))
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewModelMethodCallAttributeTemplate.ClickCooldownMsParameterName, out int clickCooldown))
                     {
                         clickCooldown = 0;
                     }
 
                     AutoCreationInfo autoCreationInfo;
-                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, "PassForwardThroughCommandName", out string? passThroughCommandName))
+                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, ViewModelMethodCallAttributeTemplate.PassForwardThroughCommandNameParameterName, out string? passThroughCommandName))
                     {
                         autoCreationInfo = new AutoCreationInfo(passThroughCommandName, AutoCreationFlag.WrappedCommand);
                         shouldGenerateMethodWithPartialStuff = false;
@@ -513,7 +524,7 @@ namespace ViewsSourceGenerator
                             AutoCreationInfo = autoCreationInfo,
                             InactivePeriodMs = clickCooldown,
                         });
-                }, attributeName, viewModelTypeSymbol)
+                }, viewModelTypeSymbol)
                 .ToArray();
             
             return result;
@@ -717,30 +728,6 @@ namespace ViewsSourceGenerator
             return isValid;
         }
 
-        private static bool TryGetDelayFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out ObservableBindingDelaySettings? delaySettings)
-        {
-            foreach (var kvp in namedArguments)
-            {
-                if (string.Equals(kvp.Key, "DelaySeconds", StringComparison.Ordinal))
-                {
-                    delaySettings = new ObservableBindingDelaySettings(false, (int)kvp.Value.Value!);
-                
-                    return true;
-                }
-                
-                if (string.Equals(kvp.Key, "DelayFrames", StringComparison.Ordinal))
-                {
-                    delaySettings = new ObservableBindingDelaySettings(true, (int)kvp.Value.Value!);
-                
-                    return true;
-                }
-            }
-
-            delaySettings = default;
-
-            return false;
-        }
-        
         private static bool TryGetNamedArgumentValue<T>(ImmutableArray<KeyValuePair<string, TypedConstant>>? namedArguments, string argumentName, [NotNullWhen(true)] out T? argumentValue)
         {
             if (!namedArguments.HasValue)
@@ -795,7 +782,22 @@ namespace ViewsSourceGenerator
 
             (bool include, ObservableBindingInfo result) GatherBindingInfo(AttributeData attribute, IFieldSymbol field)
             {
-                if (!TryGetDelayFromNamedArgument(attribute.NamedArguments, out ObservableBindingDelaySettings? delaySettings))
+                ObservableBindingDelaySettings? delaySettings;
+                if (TryGetNamedArgumentValue(
+                        attribute.NamedArguments,
+                        BindToObservableAttributeTemplate.DelaySecondsParamName,
+                        out int delaySeconds))
+                {
+                    delaySettings = new ObservableBindingDelaySettings(false, delaySeconds);
+                }
+                else if (TryGetNamedArgumentValue(
+                             attribute.NamedArguments,
+                             BindToObservableAttributeTemplate.DelayFramesParamName,
+                             out int delayFrames))
+                {
+                    delaySettings = new ObservableBindingDelaySettings(true, delayFrames);
+                }
+                else
                 {
                     delaySettings = null;
                 }

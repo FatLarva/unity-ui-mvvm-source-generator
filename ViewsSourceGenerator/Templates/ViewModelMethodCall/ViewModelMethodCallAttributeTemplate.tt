@@ -23,8 +23,8 @@ namespace <#= ns #>
     internal class ViewModelMethodCallAttribute : Attribute
     {
         public string MethodName { get; }
-        public string? PassForwardThroughCommandName { get; set; }
-        public int ClickCooldownMs { get; set; }
+        public string? <#= PassForwardThroughCommandNameParameterName #> { get; set; }
+        public int <#= ClickCooldownMsParameterName #> { get; set; }
 
         public ViewModelMethodCallAttribute(string methodName)
         {

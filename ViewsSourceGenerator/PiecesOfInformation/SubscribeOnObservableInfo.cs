@@ -1,11 +1,11 @@
-using System;
-
 namespace ViewsSourceGenerator
 {
     internal readonly struct SubscribeOnObservableInfo
     {
+        // Used by view-generation template only
         public readonly string MethodName;
-
+        
+        // Used by viewmodel-generating template or both view and viewmodel
         private readonly AutoCreationInfo _autoCreationInfo;
 
         public AutoCreationInfo AutoCreationInfo => _autoCreationInfo;
@@ -39,8 +39,7 @@ namespace ViewsSourceGenerator
 
         public static bool AreEqualFromViewModelPoV(SubscribeOnObservableInfo a, SubscribeOnObservableInfo b)
         {
-            var areEqual = string.Equals(a.MethodName, b.MethodName, StringComparison.Ordinal);
-            areEqual &= AutoCreationInfo.AreEqualFromViewModelPoV(a._autoCreationInfo, b._autoCreationInfo);
+            var areEqual = AutoCreationInfo.AreEqualFromViewModelPoV(a._autoCreationInfo, b._autoCreationInfo);
 
             return areEqual;
         }

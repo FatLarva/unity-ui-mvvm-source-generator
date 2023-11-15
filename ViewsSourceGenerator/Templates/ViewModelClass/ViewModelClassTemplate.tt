@@ -25,14 +25,9 @@ namespace <#= NamespaceName #>
 	[GeneratedViewModel]
     public partial class <#= ClassName #> : IDisposable
     {
-<#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
+<#	foreach (var subscribeInfo in CreationInfos) { #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPrivatePart()#>
-<#		} #>
-<#  } #>
-<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
-<#		if (bindingInfo.HasPrivateCreations) { #>
-		<#=bindingInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
@@ -43,14 +38,9 @@ namespace <#= NamespaceName #>
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
 		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
-<#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
+<#	foreach (var subscribeInfo in CreationInfos) { #>
 <#		if (subscribeInfo.HasPublicCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPublicPart()#>
-<#		} #>
-<#  } #>
-<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
-<#		if (bindingInfo.HasPublicCreations) { #>
-		<#=bindingInfo.GetAutoCreatedObserversPublicPart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
@@ -103,14 +93,9 @@ namespace <#= NamespaceName #>
 <# if (HasObservablesToDispose) { #>
 		private void HandleAutoCreatedObservables(CompositeDisposable compositeDisposable)
 		{
-<#	foreach (var subscribeInfo in SubscribeOnObservableInfos) { #>
+<#	foreach (var subscribeInfo in CreationInfos) { #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
 			<#=subscribeInfo.GetAutoCreatedObserversDisposePart()#>
-<#		} #>
-<#  } #>
-<#	foreach (var bindingInfo in ObservableBindingInfos) { #>
-<#		if (bindingInfo.HasPrivateCreations) { #>
-			<#=bindingInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
 <#	foreach (var methodCallInfo in ButtonMethodCallInfos) { #>
