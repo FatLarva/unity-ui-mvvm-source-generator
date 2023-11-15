@@ -27,7 +27,7 @@ namespace ViewsSourceGenerator
 
         public AutoCreationInfo(string observableName, AutoCreationFlag creationFlags, string? observableArgumentType = null)
         {
-            ObservableName = observableName;
+            ObservableName = observableName ?? string.Empty;
             _creationFlags = creationFlags;
             _observableArgumentType = observableArgumentType;
         }
@@ -41,7 +41,7 @@ namespace ViewsSourceGenerator
         
         private AutoCreationInfo(string observableName)
         {
-            ObservableName = observableName;
+            ObservableName = observableName ?? string.Empty;
             _creationFlags = AutoCreationFlag.None;
             _observableArgumentType = default;
         }
