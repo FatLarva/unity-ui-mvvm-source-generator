@@ -1,8 +1,9 @@
+using System;
 using ViewsSourceGenerator.Tools;
 
 namespace ViewsSourceGenerator
 {
-    internal readonly struct AutoCreationInfo
+    internal readonly struct AutoCreationInfo : IEquatable<AutoCreationInfo>
     {
         public static readonly AutoCreationInfo Empty = new (AutoCreationFlag.None);
         
@@ -55,7 +56,8 @@ namespace ViewsSourceGenerator
             switch (_creationFlags)
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
-                    return $"_{ObservableName.Decapitalize()}Cmd";
+                    var decapitalizedName = ObservableName.Decapitalize(); 
+                    return decapitalizedName.EndsWith("Cmd") ? decapitalizedName : $"_{decapitalizedName}Cmd";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"_{ObservableName.Decapitalize()}";
@@ -167,6 +169,36 @@ namespace ViewsSourceGenerator
             else
             {
                 return _observableArgumentType;
+            }
+        }
+
+        public static bool AreEqualFromViewModelPoV(AutoCreationInfo a, AutoCreationInfo b)
+        {
+            var areEqual = a._creationFlags == b._creationFlags;
+            areEqual &= string.Equals(a.ObservableName, b.ObservableName, StringComparison.Ordinal);
+            areEqual &= string.Equals(a._observableArgumentType, b._observableArgumentType, StringComparison.Ordinal);
+
+            return areEqual;
+        }
+
+        public bool Equals(AutoCreationInfo other)
+        {
+            return AreEqualFromViewModelPoV(this, other);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is AutoCreationInfo other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = ObservableName.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)_creationFlags;
+                hashCode = (hashCode * 397) ^ (_observableArgumentType != null ? _observableArgumentType.GetHashCode() : 0);
+                return hashCode;
             }
         }
     }

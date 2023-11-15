@@ -1,15 +1,19 @@
+using System;
 using ViewsSourceGenerator.Tools;
 
 namespace ViewsSourceGenerator
 {
     internal readonly struct ButtonMethodCallInfo
     {
+        // Used by view-generation template only
         public string ButtonFieldName { get; init; }
+        public int InactivePeriodMs { get; init; }
+        public bool ShouldCheckForNull { get; init; }
+        
+        // Used by viewmodel-generating template or both view and viewmodel
         public string MethodToCall { get; init; }
         public bool ShouldGenerateMethodWithPartialStuff { get; init; }
         public AutoCreationInfo AutoCreationInfo { get; init; }
-        public int InactivePeriodMs { get; init; }
-        public bool ShouldCheckForNull { get; init; }
 
         public bool HasPrivateCreations => AutoCreationInfo.HasPrivateCreations;
 
@@ -27,5 +31,19 @@ namespace ViewsSourceGenerator
         public string GetAutoCreatedObserversPublicPart() => AutoCreationInfo.GetAutoCreatedObserversPublicPart();
         
         public string GetCallingCommandPart() => AutoCreationInfo.GetCallingCommandPart();
+        
+        public bool IsEqualFromViewModelPoV(ButtonMethodCallInfo otherLocalizationInfo)
+        {
+            return ButtonMethodCallInfo.AreEqualFromViewModelPoV(this, otherLocalizationInfo);
+        }
+
+        public static bool AreEqualFromViewModelPoV(ButtonMethodCallInfo a, ButtonMethodCallInfo b)
+        {
+            var areEqual = a.ShouldGenerateMethodWithPartialStuff == b.ShouldGenerateMethodWithPartialStuff;
+            areEqual &= string.Equals(a.MethodToCall, b.MethodToCall, StringComparison.Ordinal);
+            areEqual &= AutoCreationInfo.AreEqualFromViewModelPoV(a.AutoCreationInfo, b.AutoCreationInfo);
+
+            return areEqual;
+        }
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using ViewsSourceGenerator.Comparers;
 using ViewsSourceGenerator.Extensions;
 using ViewsSourceGenerator.Linq;
 using ViewsSourceGenerator.Tools;
@@ -89,12 +90,22 @@ namespace ViewsSourceGenerator
             
             Task.WaitAll(taskOne, taskTwo);
             */
-            
+
+                var count = receiver.ViewsClassesToProcess.Count;
+                Console.Out.WriteLine($"There are {count} view classes to process.");
+                
                 try
                 {
+                    var allViewModelInfos = new Dictionary<string, ViewModelGenerationInfo>(count, StringComparer.Ordinal);
+                    
                     foreach (var viewClass in receiver.ViewsClassesToProcess)
                     {
-                        ProcessView(in context, viewClass);
+                        ProcessView(in context, viewClass, allViewModelInfos);
+                    }
+                    
+                    foreach (var viewModelGenerationInfo in allViewModelInfos.Values)
+                    {
+                        GenerateViewModel(in context, viewModelGenerationInfo);
                     }
                 }
                 catch (Exception exception)
@@ -127,7 +138,7 @@ namespace ViewsSourceGenerator
             }
         }
 
-        private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol)
+        private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, Dictionary<string, ViewModelGenerationInfo> allViewModelInfos)
         {
             var attribute = GetSingleAttributeData(ViewModelGenerateAttributeTemplate.AttributeName, viewTypeSymbol);
             
@@ -150,7 +161,7 @@ namespace ViewsSourceGenerator
             
             if (!skipViewModelGeneration)
             {
-                GenerateViewModel(in context, in commonInfo);
+                ObtainViewModelInfo(in commonInfo, allViewModelInfos);
             }
 
             GenerateView(in context, in commonInfo);
@@ -189,7 +200,24 @@ namespace ViewsSourceGenerator
                 additionalUsings);
         }
 
-        private void GenerateViewModel(in GeneratorExecutionContext context, in CommonInfo commonInfo)
+        private void GenerateViewModel(in GeneratorExecutionContext context, in ViewModelGenerationInfo viewModelInfo)
+        {
+            var classTemplate = new ViewModelClassTemplate(
+                viewModelInfo.ClassName,
+                viewModelInfo.NamespaceName,
+                viewModelInfo.ButtonMethodInfos,
+                viewModelInfo.LocalizationInfos,
+                viewModelInfo.SubscribeInfos,
+                viewModelInfo.ObservableBindingInfos,
+                viewModelInfo.Usings,
+                viewModelInfo.ShouldImplementDisposeInterface);
+            
+            var classFileName = $"{viewModelInfo.ClassName}_g.cs";
+                
+            context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
+        }
+        
+        private void ObtainViewModelInfo(in CommonInfo commonInfo, Dictionary<string, ViewModelGenerationInfo> allViewModelInfos)
         {
             bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(commonInfo.ViewModelTypeSymbol);
             
@@ -204,7 +232,7 @@ namespace ViewsSourceGenerator
 
             var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
             
-            var classTemplate = new ViewModelClassTemplate(
+            var info = new ViewModelGenerationInfo(
                 commonInfo.ViewModelClassName,
                 commonInfo.ViewModelNamespaceName,
                 commonInfo.MethodsToCall,
@@ -213,10 +241,29 @@ namespace ViewsSourceGenerator
                 commonInfo.ObservablesBindings,
                 usings,
                 shouldImplementDisposeInterface);
-            
-            var classFileName = $"{commonInfo.ViewModelClassName}_g.cs";
-                
-            context.AddSource(classFileName, SourceText.From(classTemplate.TransformText(), Encoding.UTF8));
+
+            if (allViewModelInfos.TryGetValue(info.Id, out var otherInfo))
+            {
+                var mergedInfo = MergeInfos(in info, in otherInfo);
+                allViewModelInfos[info.Id] = mergedInfo;
+            }
+            else
+            {
+                allViewModelInfos[info.Id] = info;
+            }
+        }
+
+        private ViewModelGenerationInfo MergeInfos(in ViewModelGenerationInfo info, in ViewModelGenerationInfo otherInfo)
+        {
+            return new ViewModelGenerationInfo(
+                info.ClassName,
+                info.NamespaceName,
+                info.ButtonMethodInfos.Concat(otherInfo.ButtonMethodInfos).Distinct(ButtonMethodCallInfoComparerFromViewModelPoV.Default).ToArray(),
+                info.LocalizationInfos.Concat(otherInfo.LocalizationInfos).Distinct(LocalizableFieldInfoComparerFromViewModelPoV.Default).ToArray(),
+                info.SubscribeInfos.Concat(otherInfo.SubscribeInfos).Distinct(SubscribeOnObservableInfoComparerFromViewModelPoV.Default).ToArray(),
+                info.ObservableBindingInfos.Concat(otherInfo.ObservableBindingInfos).Distinct(ObservableBindingInfoComparerFromViewModelPoV.Default).ToArray(),
+                info.Usings.Concat(otherInfo.Usings).Distinct(StringComparer.Ordinal).ToArray(),
+                info.ShouldImplementDisposeInterface || otherInfo.ShouldImplementDisposeInterface);
         }
 
         private void GenerateView(in GeneratorExecutionContext context, in CommonInfo commonInfo)
@@ -330,7 +377,12 @@ namespace ViewsSourceGenerator
                         return (false, default);
                     }
 
-                    if (attributeData.ConstructorArguments[0].Value is not string { Length: > 0 } localizationKey)
+                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
+                    {
+                        return (false, default);
+                    }
+                    
+                    if (ctorArgs[0].Value is not string { Length: > 0 } localizationKey)
                     {
                         return (false, default);
                     }
@@ -413,7 +465,12 @@ namespace ViewsSourceGenerator
                         return (false, default);
                     }
 
-                    if (attributeData.ConstructorArguments[0].Value is not string methodToCallName)
+                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
+                    {
+                        return (false, default);
+                    }
+                    
+                    if (ctorArgs[0].Value is not string methodToCallName)
                     {
                         return (false, default);
                     }
@@ -464,7 +521,7 @@ namespace ViewsSourceGenerator
 
         private static AttributeData? GetSingleAttributeData(string attributeName, ISymbol fieldSymbol)
         {
-            bool IsValidAttributeName(AttributeData ad) => ad.AttributeClass?.Name == attributeName;
+            bool IsValidAttributeName(AttributeData? ad) => ad?.AttributeClass?.Name == attributeName;
 
             AttributeData? attributeData = fieldSymbol
                 .GetAttributes()
@@ -502,10 +559,14 @@ namespace ViewsSourceGenerator
                             return (false, default);
                         }
 
-                        if (attributeData.ConstructorArguments[0].Value is not string observableName)
+                        if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
                         {
                             return (false, default);
-
+                        }
+                        
+                        if (ctorArgs[0].Value is not string observableName)
+                        {
+                            return (false, default);
                         }
 
                         if (!TryGetNamedArgumentValue(attributeData.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
