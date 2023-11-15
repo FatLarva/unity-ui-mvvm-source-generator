@@ -57,7 +57,7 @@ namespace ViewsSourceGenerator
             {
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateCommand):
                     var decapitalizedName = ObservableName.Decapitalize(); 
-                    return decapitalizedName.EndsWith("Cmd") ? decapitalizedName : $"_{decapitalizedName}Cmd";
+                    return decapitalizedName.EndsWith("Cmd") ? $"_{decapitalizedName}" : $"_{decapitalizedName}Cmd";
 
                 case var flags when flags.HasFlag(AutoCreationFlag.PrivateReactiveProperty):
                     return $"_{ObservableName.Decapitalize()}";
