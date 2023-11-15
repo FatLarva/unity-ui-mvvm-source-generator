@@ -590,7 +590,7 @@ namespace ViewsSourceGenerator
 
                         var methodName = methodSymbol.Name;
                         var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type : null;
-                        var methodArgumentTypeName = methodArgumentType?.ToDisplayString(DefaultSymbolDisplayFormat) ?? "Unit";
+                        var methodArgumentTypeName = TranslateType(methodArgumentType) ?? "Unit";
 
                         var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentTypeName);
                         
@@ -882,6 +882,33 @@ namespace ViewsSourceGenerator
                 default:
                     throw new ArgumentOutOfRangeException(nameof(bindingType), bindingType, $"Undefined binding type: {bindingType}");
             }
+        }
+        
+        private static string? TranslateType(ITypeSymbol? typeSymbol)
+        {
+            if (typeSymbol == null)
+            {
+                return null;
+            }
+            
+            return typeSymbol.SpecialType switch
+            {
+                SpecialType.System_Boolean => "bool",
+                SpecialType.System_Char => "char",
+                SpecialType.System_SByte => "sbyte",
+                SpecialType.System_Byte => "byte",
+                SpecialType.System_Int16 => "short",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_Int32 => "int",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_Int64 => "long",
+                SpecialType.System_UInt64 => "ulong",
+                SpecialType.System_Single => "float",
+                SpecialType.System_Double => "double",
+                SpecialType.System_Decimal => "decimal",
+                SpecialType.System_String => "string",
+                _ => typeSymbol.ToDisplayString(DefaultSymbolDisplayFormat),
+            };
         }
         
         private static bool IsIDisposableImplementedInHandwrittenPart(INamedTypeSymbol? viewModelClass)
