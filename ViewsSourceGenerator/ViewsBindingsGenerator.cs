@@ -521,25 +521,39 @@ namespace ViewsSourceGenerator
 
         private static AttributeData? GetSingleAttributeData(string attributeName, ISymbol fieldSymbol)
         {
-            bool IsValidAttributeName(AttributeData? ad) => ad?.AttributeClass?.Name == attributeName;
+            bool IsValidAttributeName(AttributeData? ad) => string.Equals(ad?.AttributeClass?.Name, attributeName, StringComparison.Ordinal);
 
-            AttributeData? attributeData = fieldSymbol
-                .GetAttributes()
-                .SingleOrDefault(IsValidAttributeName);
-            
-            return attributeData;
+            try
+            {
+                AttributeData? attributeData = fieldSymbol
+                    .GetAttributes()
+                    .SingleOrDefault(IsValidAttributeName);
+
+                return attributeData;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
         
         private static AttributeData[] GetMultipleAttributeData(string attributeName, ISymbol fieldSymbol)
         {
-            bool IsValidAttributeName(AttributeData ad) => ad.AttributeClass?.Name == attributeName;
+            bool IsValidAttributeName(AttributeData? ad) => string.Equals(ad?.AttributeClass?.Name, attributeName, StringComparison.Ordinal);
 
-            AttributeData[] attributeData = fieldSymbol
-                .GetAttributes()
-                .Where(IsValidAttributeName)
-                .ToArray();
-            
-            return attributeData;
+            try
+            {
+                AttributeData[] attributeData = fieldSymbol
+                    .GetAttributes()
+                    .Where(IsValidAttributeName)
+                    .ToArray();
+                
+                return attributeData;
+            }
+            catch (Exception)
+            {
+                return Array.Empty<AttributeData>();
+            }
         }
 
         private (string[] additionalUsings, SubscribeOnObservableInfo[] infos) GetMethodsForAutoSubscription(INamedTypeSymbol typeSymbol)
@@ -691,38 +705,16 @@ namespace ViewsSourceGenerator
         private static bool CheckPropertyTypeValidity(INamedTypeSymbol propertyType, ITypeSymbol observableGenericType, Compilation compilation, out string name)
         {
             var comparer = SymbolEqualityComparer.Default;
-            
-            /*if (observableGenericType is INamedTypeSymbol namedType)
-            {
-                var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(namedType);
-                var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(namedType);
-            
-                var isValid = comparer.Equals(propertyType, observableType);
-                isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
-                if (namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
-                {
-                    name = namedType.TypeArguments[0].Name + "?";
-                }
-                else
-                {
-                    name = namedType.Name;
-                }
-                
-                return isValid;
-            }
-            else
-            {*/
-                var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
-                var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
-            
-                var isValid = comparer.Equals(propertyType, observableType);
-                isValid |= comparer.Equals(propertyType, reactivePropertyType);
+            var observableType = compilation.GetTypeByMetadataName("System.IObservable`1")?.Construct(observableGenericType);
+            var reactivePropertyType = compilation.GetTypeByMetadataName("UniRx.IReadOnlyReactiveProperty`1")?.Construct(observableGenericType);
+        
+            var isValid = comparer.Equals(propertyType, observableType);
+            isValid |= comparer.Equals(propertyType, reactivePropertyType);
 
-                name = observableGenericType.ToDisplayString(DefaultSymbolDisplayFormat);
+            name = observableGenericType.ToDisplayString(DefaultSymbolDisplayFormat);
 
-                return isValid;
-            // }
+            return isValid;
         }
 
         private static bool TryGetDelayFromNamedArgument(ImmutableArray<KeyValuePair<string, TypedConstant>> namedArguments, out ObservableBindingDelaySettings? delaySettings)
@@ -751,19 +743,29 @@ namespace ViewsSourceGenerator
         
         private static bool TryGetNamedArgumentValue<T>(ImmutableArray<KeyValuePair<string, TypedConstant>>? namedArguments, string argumentName, [NotNullWhen(true)] out T? argumentValue)
         {
-            if (namedArguments.HasValue)
+            if (!namedArguments.HasValue)
             {
-                foreach (var kvp in namedArguments)
-                {
-                    if (string.Equals(kvp.Key, argumentName, StringComparison.Ordinal))
-                    {
-                        argumentValue = (T)kvp.Value.Value!;
-                    
-                        return true;
-                    }
-                }
+                argumentValue = default;
+                return false;
             }
+            
+            foreach (var kvp in namedArguments)
+            {
+                if (!string.Equals(kvp.Key, argumentName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
 
+                var typedConstant = kvp.Value;
+                if (typedConstant.IsNull || typedConstant.Value == null)
+                {
+                    continue;
+                }
+
+                argumentValue = (T)typedConstant.Value;
+                return true;
+            }
+            
             argumentValue = default;
             return false;
         }
