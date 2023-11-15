@@ -1,3 +1,5 @@
+using System;
+
 namespace ViewsSourceGenerator
 {
     internal readonly struct SubscribeOnObservableInfo
@@ -5,6 +7,8 @@ namespace ViewsSourceGenerator
         public readonly string MethodName;
 
         private readonly AutoCreationInfo _autoCreationInfo;
+
+        public AutoCreationInfo AutoCreationInfo => _autoCreationInfo;
 
         public string ObservableName => _autoCreationInfo.ObservableName;
 
@@ -27,5 +31,18 @@ namespace ViewsSourceGenerator
         public string GetAutoCreatedObserversDisposePart() => _autoCreationInfo.GetAutoCreatedObserversDisposePart();
 
         public string GetAutoCreatedObserversPublicPart() => _autoCreationInfo.GetAutoCreatedObserversPublicPart();
+        
+        public bool IsEqualFromViewModelPoV(SubscribeOnObservableInfo otherLocalizationInfo)
+        {
+            return SubscribeOnObservableInfo.AreEqualFromViewModelPoV(this, otherLocalizationInfo);
+        }
+
+        public static bool AreEqualFromViewModelPoV(SubscribeOnObservableInfo a, SubscribeOnObservableInfo b)
+        {
+            var areEqual = string.Equals(a.MethodName, b.MethodName, StringComparison.Ordinal);
+            areEqual &= AutoCreationInfo.AreEqualFromViewModelPoV(a._autoCreationInfo, b._autoCreationInfo);
+
+            return areEqual;
+        }
     }
 }

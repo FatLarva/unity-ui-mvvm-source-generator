@@ -4,13 +4,18 @@ namespace ViewsSourceGenerator
 {
     internal readonly struct ObservableBindingInfo
     {
+        // Used by view-generation template only
         private readonly string _fieldName;
         private readonly BindingType _bindingType;
         private readonly bool _isInversed;
         private readonly bool _isCollection;
         private readonly bool _shouldCheckForNull;
         private readonly ObservableBindingDelaySettings? _delaySettings;
+        
+        // Used by viewmodel-generating template or both view and viewmodel
         private readonly AutoCreationInfo _autoCreationInfo;
+
+        public AutoCreationInfo AutoCreationInfo => _autoCreationInfo;
 
         public string ObservableName => _autoCreationInfo.ObservableName;
 
@@ -21,7 +26,9 @@ namespace ViewsSourceGenerator
         public bool HasPublicCreations => _autoCreationInfo.HasPublicCreations;
 
         public bool HasObservablesToDispose => HasPrivateCreations;
+        
         public string FieldName => _fieldName;
+        
         public bool CheckForNull => _shouldCheckForNull;
 
         public ObservableBindingInfo(string fieldName, BindingType bindingType, bool isInversed, bool isCollection, bool shouldCheckForNull, ObservableBindingDelaySettings? delaySettings, AutoCreationInfo autoCreationInfo)
@@ -128,19 +135,32 @@ namespace ViewsSourceGenerator
 
         public string DelayIfNeeded()
         {
-            if (!_delaySettings.HasValue)
+            if (_delaySettings is not {} assuredDelaySettings)
             {
                 return string.Empty;
             }
 
-            if (_delaySettings.Value.IsFrames)
+            var delay = assuredDelaySettings.Delay;
+            if (assuredDelaySettings.IsFrames)
             {
-                return $"\n\t\t\t\t.DelayFrame({_delaySettings.Value.Delay})";
+                return $"\n\t\t\t\t.DelayFrame({delay})";
             }
             else
             {
-                return $"\n\t\t\t\t.Delay(TimeSpan.FromSeconds({_delaySettings.Value.Delay}))";
+                return $"\n\t\t\t\t.Delay(TimeSpan.FromSeconds({delay}))";
             }
+        }
+        
+        public bool IsEqualFromViewModelPoV(ObservableBindingInfo otherBindingInfo)
+        {
+            return ObservableBindingInfo.AreEqualFromViewModelPoV(this, otherBindingInfo);
+        }
+
+        public static bool AreEqualFromViewModelPoV(ObservableBindingInfo a, ObservableBindingInfo b)
+        {
+            var areEqual = AutoCreationInfo.AreEqualFromViewModelPoV(a._autoCreationInfo, b._autoCreationInfo);
+
+            return areEqual;
         }
     }
 }
