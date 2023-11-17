@@ -22,6 +22,7 @@ namespace <#=ns#>
     {
         public string ObservableName;
         public AutoCreationFlag AutoCreationFlag { get; set; }
+        public string? <#= FilterParameterName #> { get; set; }
 
         public SubscribeOnViewModelsObservableAttribute(string observableName)
         {

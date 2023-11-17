@@ -114,11 +114,13 @@ namespace <#= NamespaceName #>
 
 <#  } #>
 <#	foreach (var info in SubscribeOnObservableInfos) { #>
-<#		if (info.HasObservableArgument) { #>
-			model.<#=info.ObservableName#>.Subscribe(<#=info.MethodName#>).AddTo(_oneInitDisposable);
-<#      } else { #>
-			model.<#=info.ObservableName#>.Subscribe(_ => <#=info.MethodName#>()).AddTo(_oneInitDisposable);
+			model
+				.<#=info.ObservableName#>
+<#      if (info.HasFilter) { #>
+				.Where(observableValue => <#= info.Filter #>)
 <#      } #>
+				.Subscribe(<#= info.GetSubscriptionInnerCode() #>)
+				.AddTo(_oneInitDisposable);
 <#  } #>
 
 			ManualInit(model);
