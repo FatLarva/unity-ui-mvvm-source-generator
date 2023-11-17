@@ -22,8 +22,8 @@ namespace <#=ns#>
     internal class BindToObservableAttribute : Attribute
     {
         public string ObservableName { get; }
-        public <#=ns#>.BindingType BindingType { get; }
-        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; }
+        public BindingType BindingType { get; }
+        public AutoCreationFlag AutoCreationFlag { get; set; }
         public int <#= DelayFramesParamName #> { get; set; }
         public int <#= DelaySecondsParamName #> { get; set; }
 
