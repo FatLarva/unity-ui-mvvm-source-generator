@@ -8,7 +8,7 @@ namespace ViewsSourceGenerator
         public string ClassName { get; }
         public string NamespaceName { get; }
         public ButtonMethodCallInfo[] ButtonMethodInfos { get; }
-        public LocalizableFieldInfo[] LocalizationInfos { get; }
+        public ViewModelLocalizationInfo[] LocalizationInfos { get; }
         public SubscribeOnObservableInfo[] SubscribeInfos { get; }
         public ObservableBindingInfo[] ObservableBindingInfos { get; }
         public string[] Usings { get; }
@@ -20,7 +20,7 @@ namespace ViewsSourceGenerator
             string className,
             string namespaceName,
             ButtonMethodCallInfo[] buttonMethodInfos,
-            LocalizableFieldInfo[] localizationInfos,
+            ViewModelLocalizationInfo[] localizationInfos,
             SubscribeOnObservableInfo[] subscribeInfos,
             ObservableBindingInfo[] observableBindingInfos,
             string[] usings,
@@ -30,7 +30,7 @@ namespace ViewsSourceGenerator
             NamespaceName = namespaceName;
             
             ButtonMethodInfos = buttonMethodInfos.Distinct(ButtonMethodCallInfoComparerFromViewModelPoV.Default).ToArray();
-            LocalizationInfos = localizationInfos.Distinct(LocalizableFieldInfoComparerFromViewModelPoV.Default).ToArray();
+            LocalizationInfos = localizationInfos;
             SubscribeInfos = subscribeInfos.Distinct(SubscribeOnObservableInfoComparerFromViewModelPoV.Default).ToArray();
             ObservableBindingInfos = observableBindingInfos.Distinct(ObservableBindingInfoComparerFromViewModelPoV.Default).ToArray();
             Usings = usings;

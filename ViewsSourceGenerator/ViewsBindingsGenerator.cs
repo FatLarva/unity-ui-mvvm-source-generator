@@ -232,9 +232,13 @@ namespace ViewsSourceGenerator
         private void ObtainViewModelInfo(in CommonInfo commonInfo, Dictionary<string, ViewModelGenerationInfo> allViewModelInfos)
         {
             bool shouldImplementDisposeInterface = !IsIDisposableImplementedInHandwrittenPart(commonInfo.ViewModelTypeSymbol);
+
+            var viewModelType = commonInfo.ViewModelTypeSymbol;
             
-            LocalizableFieldInfo[] localizationInfos = commonInfo.LocalizationFieldInfos
+            ViewModelLocalizationInfo[] localizationInfos = commonInfo.LocalizationFieldInfos
                 .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
+                .Distinct(LocalizableFieldInfoComparerFromViewModelPoV.Default)
+                .Select(localizationFieldInfo => ConvertToViewModelLocalization(localizationFieldInfo, viewModelType))
                 .ToArray();
 
             var needLocalization = commonInfo.IsNeedLocalization;
@@ -265,19 +269,61 @@ namespace ViewsSourceGenerator
             }
         }
 
+        private ViewModelLocalizationInfo ConvertToViewModelLocalization(
+            LocalizableFieldInfo localizationFieldInfo,
+            INamedTypeSymbol? viewModelTypeSymbol)
+        {
+            if (string.IsNullOrEmpty(localizationFieldInfo.KeyProviderFieldName) || viewModelTypeSymbol == null)
+            {
+                return new ViewModelLocalizationInfo() { LocalizationKey = localizationFieldInfo.LocalizationKey, IsProviderObservable = false };
+            }
+            
+            var fieldInfo = viewModelTypeSymbol
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .FirstOrDefault(fieldInfo => string.Equals(fieldInfo.Name, localizationFieldInfo.KeyProviderFieldName, StringComparison.Ordinal));
+
+            if (fieldInfo == null)
+            {
+                return new ViewModelLocalizationInfo
+                {
+                    LocalizationKey = localizationFieldInfo.LocalizationKey,
+                    KeyProviderFieldName = localizationFieldInfo.KeyProviderFieldName,
+                    IsProviderObservable = false,
+                };
+            }
+
+            var isFieldObservable = IsFieldObservable(fieldInfo);
+            
+            return new ViewModelLocalizationInfo
+            {
+                LocalizationKey = localizationFieldInfo.LocalizationKey,
+                KeyProviderFieldName = localizationFieldInfo.KeyProviderFieldName,
+                IsProviderObservable = isFieldObservable
+            };
+        }
+
         private ViewModelGenerationInfo MergeInfos(in ViewModelGenerationInfo info, in ViewModelGenerationInfo otherInfo)
         {
             return new ViewModelGenerationInfo(
                 info.ClassName,
                 info.NamespaceName,
                 info.ButtonMethodInfos.Concat(otherInfo.ButtonMethodInfos).Distinct(ButtonMethodCallInfoComparerFromViewModelPoV.Default).ToArray(),
-                info.LocalizationInfos.Concat(otherInfo.LocalizationInfos).Distinct(LocalizableFieldInfoComparerFromViewModelPoV.Default).ToArray(),
+                info.LocalizationInfos.Concat(otherInfo.LocalizationInfos).Distinct(ViewModelLocalizationInfoComparerFromViewModelPoV.Default).ToArray(),
                 info.SubscribeInfos.Concat(otherInfo.SubscribeInfos).Distinct(SubscribeOnObservableInfoComparerFromViewModelPoV.Default).ToArray(),
                 info.ObservableBindingInfos.Concat(otherInfo.ObservableBindingInfos).Distinct(ObservableBindingInfoComparerFromViewModelPoV.Default).ToArray(),
                 info.Usings.Concat(otherInfo.Usings).Distinct(StringComparer.Ordinal).ToArray(),
                 info.ShouldImplementDisposeInterface || otherInfo.ShouldImplementDisposeInterface);
         }
-
+        
+        private static bool IsFieldObservable(IFieldSymbol fieldInfo)
+        {
+            var type = fieldInfo.Type;
+            return type.AllInterfaces.Any(interfaceType =>
+                interfaceType.OriginalDefinition.Name == "IObservable" &&
+                interfaceType is { TypeArguments: { Length: 1 } });
+        }
+        
         private void GenerateView(in GeneratorExecutionContext context, in CommonInfo commonInfo)
         {
             var viewTypeSymbol = commonInfo.ViewTypeSymbol; 

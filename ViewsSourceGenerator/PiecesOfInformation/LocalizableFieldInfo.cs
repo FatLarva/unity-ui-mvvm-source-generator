@@ -18,11 +18,6 @@ namespace ViewsSourceGenerator
                 $"{ViewFieldName}.placeholder.GetComponent<TMPro.TextMeshProUGUI>().text" :
                 $"{ViewFieldName}.text";
 
-        public string GetLocalizationKey()
-        {
-            return string.IsNullOrEmpty(KeyProviderFieldName) ? $"\"{LocalizationKey}\"" : $"{KeyProviderFieldName}";
-        }
-
         public bool IsEqualFromViewModelPoV(LocalizableFieldInfo otherLocalizationInfo)
         {
             return LocalizableFieldInfo.AreEqualFromViewModelPoV(this, otherLocalizationInfo);
