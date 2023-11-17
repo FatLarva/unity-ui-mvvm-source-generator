@@ -12,11 +12,11 @@ namespace ViewsSourceGenerator
 
         private ButtonMethodCallInfo[] ButtonMethodCallInfos { get; }
 
-        private LocalizableFieldInfo[] LocalizationFieldInfos { get; }
+        private ViewModelLocalizationInfo[] LocalizationInfos { get; }
 
         private AutoCreationInfo[] CreationInfos { get; }
         
-        private bool NeedLocalization => LocalizationFieldInfos.Length > 0;
+        private bool NeedLocalization => LocalizationInfos.Length > 0;
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -30,7 +30,7 @@ namespace ViewsSourceGenerator
             string className,
             string namespaceName,
             ButtonMethodCallInfo[] buttonMethodCallInfos,
-            LocalizableFieldInfo[] localizationFieldInfos,
+            ViewModelLocalizationInfo[] localizationInfos,
             AutoCreationInfo[] autoCreationInfos,
             string[] usings,
             bool shouldImplementDisposeInterface)
@@ -38,7 +38,7 @@ namespace ViewsSourceGenerator
             ClassName = className;
             NamespaceName = namespaceName;
             ButtonMethodCallInfos = buttonMethodCallInfos;
-            LocalizationFieldInfos = localizationFieldInfos;
+            LocalizationInfos = localizationInfos;
             CreationInfos = autoCreationInfos;
             Usings = usings;
             ShouldImplementDisposeInterface = shouldImplementDisposeInterface;

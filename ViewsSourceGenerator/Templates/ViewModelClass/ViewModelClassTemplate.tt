@@ -35,7 +35,7 @@ namespace <#= NamespaceName #>
 		<#=methodCallInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
-<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+<#	foreach (var localizableFieldInfo in LocalizationInfos) { #>
 		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
 <#	foreach (var subscribeInfo in CreationInfos) { #>
@@ -103,7 +103,7 @@ namespace <#= NamespaceName #>
 			<#=methodCallInfo.GetAutoCreatedObserversDisposePart()#>
 <#		} #>
 <#  } #>
-<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
+<#	foreach (var localizableFieldInfo in LocalizationInfos) { #>
 			<#=localizableFieldInfo.LocalizationKey.ToPascalCase()#>.AddTo(compositeDisposable);
 <#  } #>
 		}
@@ -125,8 +125,17 @@ namespace <#= NamespaceName #>
 		{
 			try
 			{
-<#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>
-				<#= localizableFieldInfo.LocalizationKey.ToPascalCase() #>.Value = localizationProvider.GetLocalizationForKey(<#= localizableFieldInfo.GetLocalizationKey() #>);
+<#	foreach (var localizableFieldInfo in LocalizationInfos) { #>
+<#		if (localizableFieldInfo.IsProviderObservable) { #>
+				<#=localizableFieldInfo.KeyProviderFieldName#>
+					.Subscribe(localizationKey => {
+						<#= localizableFieldInfo.LocalizedTextField #>.Value = localizationProvider.GetLocalizationForKey(localizationKey);
+					})
+					.AddTo(_lifetimeDisposable);
+				
+<#		} else { #>
+				<#= localizableFieldInfo.LocalizedTextField #>.Value = localizationProvider.GetLocalizationForKey(<#= localizableFieldInfo.GetLocalizationKey() #>);
+<#		} #>
 <#  } #>
 			}
 			catch(Exception exception)
