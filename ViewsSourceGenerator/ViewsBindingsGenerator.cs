@@ -598,6 +598,11 @@ namespace ViewsSourceGenerator
                         {
                             creationFlags = AutoCreationFlag.None;
                         }
+                        
+                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubscribeOnViewModelsObservableAttributeTemplate.FilterParameterName, out string? filter))
+                        {
+                            filter = null;
+                        }
 
                         var methodName = methodSymbol.Name;
                         var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type : null;
@@ -605,7 +610,7 @@ namespace ViewsSourceGenerator
 
                         var autoCreationInfo = new AutoCreationInfo(observableName, creationFlags, methodArgumentTypeName);
                         
-                        return (true, (new SubscribeOnObservableInfo(methodName, autoCreationInfo), methodArgumentType));
+                        return (true, (new SubscribeOnObservableInfo(methodName, autoCreationInfo, filter), methodArgumentType));
                     }).ToArray();
 
                 string[] additionalUsings = intermediateResult
