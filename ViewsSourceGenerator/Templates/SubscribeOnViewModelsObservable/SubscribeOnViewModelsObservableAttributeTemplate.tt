@@ -21,7 +21,7 @@ namespace <#=ns#>
     internal class SubscribeOnViewModelsObservableAttribute : Attribute
     {
         public string ObservableName;
-        public <#=ns#>.AutoCreationFlag AutoCreationFlag { get; set; }
+        public AutoCreationFlag AutoCreationFlag { get; set; }
 
         public SubscribeOnViewModelsObservableAttribute(string observableName)
         {
