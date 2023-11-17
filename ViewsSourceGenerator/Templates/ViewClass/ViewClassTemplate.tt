@@ -117,7 +117,7 @@ namespace <#= NamespaceName #>
 			model
 				.<#=info.ObservableName#>
 <#      if (info.HasFilter) { #>
-				.Where(observableValue => <#= info.Filter #>)
+				.Where(observableValue => observableValue <#= info.Filter #>)
 <#      } #>
 				.Subscribe(<#= info.GetSubscriptionInnerCode() #>)
 				.AddTo(_oneInitDisposable);
