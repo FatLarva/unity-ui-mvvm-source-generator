@@ -127,7 +127,8 @@ namespace <#= NamespaceName #>
 			{
 <#	foreach (var localizableFieldInfo in LocalizationInfos) { #>
 <#		if (localizableFieldInfo.IsProviderObservable) { #>
-				<#=localizableFieldInfo.KeyProviderFieldName#>
+				<#=localizableFieldInfo.KeyProviderFieldName #>
+					.Where(localizationKey => !string.IsNullOrWhiteSpace(localizationKey))
 					.Subscribe(localizationKey => {
 						<#= localizableFieldInfo.LocalizedTextField #>.Value = localizationProvider.GetLocalizationForKey(localizationKey);
 					})
