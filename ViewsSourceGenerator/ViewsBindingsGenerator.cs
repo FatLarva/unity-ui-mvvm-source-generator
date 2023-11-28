@@ -275,31 +275,20 @@ namespace ViewsSourceGenerator
         {
             if (string.IsNullOrEmpty(localizationFieldInfo.KeyProviderFieldName) || viewModelTypeSymbol == null)
             {
-                return new ViewModelLocalizationInfo() { LocalizationKey = localizationFieldInfo.LocalizationKey, IsProviderObservable = false };
+                return new ViewModelLocalizationInfo { LocalizationKey = localizationFieldInfo.LocalizationKey, IsProviderObservable = false };
             }
             
-            var fieldInfo = viewModelTypeSymbol
-                .GetMembers()
-                .OfType<IFieldSymbol>()
-                .FirstOrDefault(fieldInfo => string.Equals(fieldInfo.Name, localizationFieldInfo.KeyProviderFieldName, StringComparison.Ordinal));
+            var memberSymbol = viewModelTypeSymbol
+                .GetMembers(localizationFieldInfo.KeyProviderFieldName)
+                .FirstOrDefault();
 
-            if (fieldInfo == null)
-            {
-                return new ViewModelLocalizationInfo
-                {
-                    LocalizationKey = localizationFieldInfo.LocalizationKey,
-                    KeyProviderFieldName = localizationFieldInfo.KeyProviderFieldName,
-                    IsProviderObservable = false,
-                };
-            }
-
-            var isFieldObservable = IsFieldObservable(fieldInfo);
+            var isMemberObservable = memberSymbol != null && IsMemberObservable(memberSymbol);
             
             return new ViewModelLocalizationInfo
             {
                 LocalizationKey = localizationFieldInfo.LocalizationKey,
                 KeyProviderFieldName = localizationFieldInfo.KeyProviderFieldName,
-                IsProviderObservable = isFieldObservable
+                IsProviderObservable = isMemberObservable,
             };
         }
 
@@ -316,12 +305,26 @@ namespace ViewsSourceGenerator
                 info.ShouldImplementDisposeInterface || otherInfo.ShouldImplementDisposeInterface);
         }
         
-        private static bool IsFieldObservable(IFieldSymbol fieldInfo)
+        private static bool IsMemberObservable(ISymbol memberSymbol)
         {
-            var type = fieldInfo.Type;
-            return type.AllInterfaces.Any(interfaceType =>
-                interfaceType.OriginalDefinition.Name == "IObservable" &&
-                interfaceType is { TypeArguments: { Length: 1 } });
+            var type = memberSymbol switch
+            {
+                IFieldSymbol fieldSymbol => fieldSymbol.Type,
+                IPropertySymbol propertySymbol => propertySymbol.Type,
+                _ => null,
+            };
+
+            if (type == null)
+            {
+                return false;
+            }
+                
+            return IsObservable(type as INamedTypeSymbol) || type.AllInterfaces.Any(IsObservable);
+
+            bool IsObservable(INamedTypeSymbol? typeToCheck)
+            {
+                return typeToCheck is { OriginalDefinition: { Name: "IObservable" } } and { TypeArguments: { Length: 1 } };
+            }
         }
         
         private void GenerateView(in GeneratorExecutionContext context, in CommonInfo commonInfo)
