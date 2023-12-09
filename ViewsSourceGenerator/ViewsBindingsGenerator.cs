@@ -278,17 +278,19 @@ namespace ViewsSourceGenerator
                 return new ViewModelLocalizationInfo { LocalizationKey = localizationFieldInfo.LocalizationKey, IsProviderObservable = false };
             }
             
-            var memberSymbol = viewModelTypeSymbol
+            ISymbol? memberSymbol = viewModelTypeSymbol
                 .GetMembers(localizationFieldInfo.KeyProviderFieldName)
                 .FirstOrDefault();
 
             var isMemberObservable = memberSymbol != null && IsMemberObservable(memberSymbol);
+            var keyCanBeNull = memberSymbol != null && GetSingleAttributeData(CanBeNullAttributeName, memberSymbol) != null;
             
             return new ViewModelLocalizationInfo
             {
                 LocalizationKey = localizationFieldInfo.LocalizationKey,
                 KeyProviderFieldName = localizationFieldInfo.KeyProviderFieldName,
                 IsProviderObservable = isMemberObservable,
+                CanBeNull = keyCanBeNull,
             };
         }
 
