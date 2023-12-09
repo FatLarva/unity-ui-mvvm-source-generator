@@ -134,6 +134,12 @@ namespace <#= NamespaceName #>
 					})
 					.AddTo(_lifetimeDisposable);
 				
+<#		} else if (localizableFieldInfo.CanBeNull) { #>
+				if (!string.IsNullOrWhiteSpace(<#= localizableFieldInfo.GetLocalizationKey() #>))
+				{
+					<#= localizableFieldInfo.LocalizedTextField #>.Value = localizationProvider.GetLocalizationForKey(<#= localizableFieldInfo.GetLocalizationKey() #>);
+				}
+
 <#		} else { #>
 				<#= localizableFieldInfo.LocalizedTextField #>.Value = localizationProvider.GetLocalizationForKey(<#= localizableFieldInfo.GetLocalizationKey() #>);
 <#		} #>

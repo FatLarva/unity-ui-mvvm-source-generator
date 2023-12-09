@@ -8,6 +8,7 @@ namespace ViewsSourceGenerator
         public string LocalizationKey { get; init; }
         public string KeyProviderFieldName { get; init; }
         public bool IsProviderObservable { get; init; }
+        public bool CanBeNull { get; init; }
 
         public string LocalizedTextField => LocalizationKey.ToPascalCase();
         
