@@ -93,6 +93,12 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>GeneratedModelAttributeTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\SubViewsCollection\SubViewsCollectionAttributeTemplate.cs">
+        <DependentUpon>SubViewsCollectionAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\SubViewsBindingMethod\SubViewsBindingMethodTemplate.cs">
+        <DependentUpon>SubViewsBindingMethodTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -167,6 +173,14 @@
       <None Update="Templates\GeneratedModel\GeneratedModelAttributeTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>GeneratedModelAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\SubViewsCollection\SubViewsCollectionAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>SubViewsCollectionAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\SubViewsBindingMethod\SubViewsBindingMethodTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>SubViewsBindingMethodTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 

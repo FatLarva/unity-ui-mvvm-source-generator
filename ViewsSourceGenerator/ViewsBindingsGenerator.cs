@@ -339,6 +339,7 @@ namespace ViewsSourceGenerator
                 .Concat(commonInfo.KeyFromFieldLocalizationFieldInfos)
                 .ToArray();
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
+            SubViewsCollectionInfo[] subViewsCollectionInfos = GetSubViewsCollectionInfos(viewTypeSymbol);
 
             var requiredUsings = new[] { "System", "UniRx", "Tools", "UnityEngine", "ViewModelGeneration" };
             var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
@@ -352,6 +353,7 @@ namespace ViewsSourceGenerator
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
                 subViewInfos,
+                subViewsCollectionInfos,
                 usings);
             var classFileName = $"{viewClassName}_g.cs";
                 
@@ -410,6 +412,112 @@ namespace ViewsSourceGenerator
                     }
                                 
                     return (true, new SubViewInfo { ViewFieldName = field.Name, ViewModelFieldName = viewModelFieldName, CheckForNull = shouldCheckForNull });
+                })
+                .ToArray();
+
+            return result;
+        }
+        
+        private SubViewsCollectionInfo[] GetSubViewsCollectionInfos(INamedTypeSymbol typeSymbol)
+        {
+            var result = typeSymbol
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .SelectWhere(field =>
+                {
+                    const string attrName = SubViewsCollectionAttributeTemplate.AttributeName;
+                    var attributeData = GetSingleAttributeData(attrName, field);
+
+                    if (attributeData == null)
+                    {
+                        return (false, default);
+                    }
+                    
+                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
+                    
+                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
+                    {
+                        return (false, default);
+                    }
+                
+                    if (ctorArgs[0].Value is not int bindingMethodObject)
+                    {
+                        return (false, default);
+                    }
+
+                    var bindingMethod = (SubViewsBindingMethod)bindingMethodObject;
+                    
+                    string? viewModelFieldName = string.Empty;
+                    if (bindingMethod != SubViewsBindingMethod.SameModel)
+                    {
+                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.SubViewModelFieldNameParameterName, out viewModelFieldName))
+                        {
+                            return (false, default);
+                        }
+                    }
+                    
+                    switch (bindingMethod)
+                    {
+                        case SubViewsBindingMethod.SameModel:
+                            return (
+                                       true,
+                                       new SubViewsCollectionInfo
+                                       {
+                                           ViewFieldName = field.Name,
+                                           CheckForNull = shouldCheckForNull,
+                                           BindingMethod = SubViewsBindingMethod.SameModel,
+                                       });
+                        case SubViewsBindingMethod.Index:
+                            return (
+                                       true,
+                                       new SubViewsCollectionInfo
+                                       {
+                                           ViewFieldName = field.Name,
+                                           ViewModelFieldName = viewModelFieldName,
+                                           CheckForNull = shouldCheckForNull,
+                                           BindingMethod = SubViewsBindingMethod.Index,
+                                       });
+                        case SubViewsBindingMethod.FieldMatch:
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewBindingFieldNameParameterName, out string? viewMatchingFieldName))
+                            {
+                                return (false, default);
+                            }
+                            
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewModelBindingFieldNameParameterName, out string? viewModelMatchingFieldName))
+                            {
+                                return (false, default);
+                            }
+                            
+                            return (
+                                       true,
+                                       new SubViewsCollectionInfo
+                                       {
+                                           ViewFieldName = field.Name,
+                                           ViewModelFieldName = viewModelFieldName,
+                                           CheckForNull = shouldCheckForNull,
+                                           BindingMethod = SubViewsBindingMethod.FieldMatch,
+                                           ViewBindingFieldName = viewMatchingFieldName,
+                                           ViewModelBindingFieldName = viewModelMatchingFieldName,
+                                       });
+                        case SubViewsBindingMethod.WithMethod:
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.MatchingMethodNameParameterName, out string? matchingMethodName))
+                            {
+                                return (false, default);
+                            }
+                            
+                            return (
+                                       true,
+                                       new SubViewsCollectionInfo
+                                       {
+                                           ViewFieldName = field.Name,
+                                           ViewModelFieldName = viewModelFieldName,
+                                           CheckForNull = shouldCheckForNull,
+                                           BindingMethod = SubViewsBindingMethod.WithMethod,
+                                           MatchingMethodName = matchingMethodName,
+                                       });
+                    }
+
+                    return (false, default);
                 })
                 .ToArray();
 
