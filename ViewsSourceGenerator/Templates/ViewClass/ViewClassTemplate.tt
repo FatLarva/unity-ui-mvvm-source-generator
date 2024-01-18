@@ -57,6 +57,12 @@ namespace <#= NamespaceName #>
 <#      } #>
 <#  } #>
 
+<#	foreach (var subViewsCollectionInfo in SubViewsCollectionInfos) { #>
+<#		foreach (var statement in subViewsCollectionInfo.GetInitCall()) { #>
+            <#= statement #>
+<#      } #>
+<#  } #>
+
 <#	foreach (var observableBindingInfo in ObservableBindingInfos) { #>
 <#		if (observableBindingInfo.CheckForNull) { #>
 			if (<#=observableBindingInfo.FieldName#> != null)
@@ -140,6 +146,12 @@ namespace <#= NamespaceName #>
 			}
 <#      } else { #>
 			<#=subViewInfo.GetDeinitCall()#>
+<#      } #>
+<#  } #>
+
+<#	foreach (var subViewsCollectionInfo in SubViewsCollectionInfos) { #>
+<#		foreach (var statement in subViewsCollectionInfo.GetDeinitCall()) { #>
+            <#= statement #>
 <#      } #>
 <#  } #>
 

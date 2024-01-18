@@ -19,6 +19,8 @@
         private ObservableBindingInfo[] ObservableBindingInfos { get; }
         
         private SubViewInfo[] SubViewInfos { get; }
+        
+        private SubViewsCollectionInfo[] SubViewsCollectionInfos { get; }
 
         private bool HasNamespace => !string.IsNullOrEmpty(NamespaceName);
 
@@ -31,6 +33,7 @@
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,
             SubViewInfo[] subViewInfos,
+            SubViewsCollectionInfo[] subViewsCollectionInfos,
             string[] usings)
         {
             ClassName = className;
@@ -41,6 +44,7 @@
             SubscribeOnObservableInfos = subscribeOnObservableInfos;
             ObservableBindingInfos = observableBindingInfos;
             SubViewInfos = subViewInfos;
+            SubViewsCollectionInfos = subViewsCollectionInfos;
             Usings = usings;
         }
     }
