@@ -10,7 +10,7 @@
         
         private string[] Usings { get; }
 
-        private ButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
+        private ViewButtonMethodCallInfo[] ButtonMethodCallInfo { get; }
         
         private LocalizableFieldInfo[] LocalizationFieldInfos { get; }
         
@@ -28,7 +28,7 @@
             string className,
             string viewModelClassName,
             string namespaceName,
-            ButtonMethodCallInfo[] buttonMethodCallInfo,
+            ViewButtonMethodCallInfo[] buttonMethodCallInfo,
             LocalizableFieldInfo[] localizationFieldInfos,
             SubscribeOnObservableInfo[] subscribeOnObservableInfos,
             ObservableBindingInfo[] observableBindingInfos,

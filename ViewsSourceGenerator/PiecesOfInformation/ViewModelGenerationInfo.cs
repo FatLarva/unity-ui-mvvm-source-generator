@@ -7,7 +7,7 @@ namespace ViewsSourceGenerator
     {
         public string ClassName { get; }
         public string NamespaceName { get; }
-        public ButtonMethodCallInfo[] ButtonMethodInfos { get; }
+        public ViewModelButtonMethodCallInfo[] ButtonMethodInfos { get; }
         public ViewModelLocalizationInfo[] LocalizationInfos { get; }
         public SubscribeOnObservableInfo[] SubscribeInfos { get; }
         public ObservableBindingInfo[] ObservableBindingInfos { get; }
@@ -19,7 +19,7 @@ namespace ViewsSourceGenerator
         public ViewModelGenerationInfo(
             string className,
             string namespaceName,
-            ButtonMethodCallInfo[] buttonMethodInfos,
+            ViewModelButtonMethodCallInfo[] buttonMethodInfos,
             ViewModelLocalizationInfo[] localizationInfos,
             SubscribeOnObservableInfo[] subscribeInfos,
             ObservableBindingInfo[] observableBindingInfos,

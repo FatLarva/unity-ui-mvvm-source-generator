@@ -99,6 +99,19 @@
       <Compile Update="Templates\SubViewsBindingMethod\SubViewsBindingMethodTemplate.cs">
         <DependentUpon>SubViewsBindingMethodTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\ViewMethodCall\ViewMethodCallAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ViewMethodCallAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\ViewMethodCall\ViewMethodCallAttributeTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ViewMethodCallAttributeTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\MonoBehaviourExt\MonoBehaviourExtTemplate.cs">
+        <DependentUpon>MonoBehaviourExtTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -181,6 +194,14 @@
       <None Update="Templates\SubViewsBindingMethod\SubViewsBindingMethodTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>SubViewsBindingMethodTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ViewMethodCall\ViewMethodCallAttributeTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ViewMethodCallAttributeTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\MonoBehaviourExt\MonoBehaviourExtTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>MonoBehaviourExtTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 

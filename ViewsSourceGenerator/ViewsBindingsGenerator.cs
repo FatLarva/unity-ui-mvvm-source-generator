@@ -181,7 +181,8 @@ namespace ViewsSourceGenerator
         private CommonInfo GatherCommonInfo(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, string viewModelClassName, string viewModelNamespaceName)
         {
             INamedTypeSymbol? viewModelTypeSymbol = context.Compilation.GetTypeByMetadataName($"{viewModelNamespaceName}.{viewModelClassName}");
-            ButtonMethodCallInfo[] methodsToCall = GetButtonMethodCallInfo(viewTypeSymbol, viewModelTypeSymbol);
+            ViewModelButtonMethodCallInfo[] viewModelMethodsToCall = GetViewModelButtonMethodCallInfo(viewTypeSymbol, viewModelTypeSymbol);
+            ViewButtonMethodCallInfo[] viewMethodsToCall = GetViewButtonMethodCallInfo(viewTypeSymbol);
             LocalizableFieldInfo[] localizationFieldInfos = GetLocalizableFieldInfos(viewTypeSymbol);
             LocalizableFieldInfo[] localizableByKeyFromFieldInfos = GetLocalizableByKeyFromFieldInfos(viewTypeSymbol);
             (string[] additionalUsings, SubscribeOnObservableInfo[] methodForAutoSubscription) = GetMethodsForAutoSubscription(viewTypeSymbol);
@@ -192,7 +193,8 @@ namespace ViewsSourceGenerator
                 viewModelNamespaceName,
                 viewTypeSymbol,
                 viewModelTypeSymbol,
-                methodsToCall,
+                viewModelMethodsToCall,
+                viewMethodsToCall,
                 localizationFieldInfos,
                 localizableByKeyFromFieldInfos,
                 methodForAutoSubscription,
@@ -251,7 +253,7 @@ namespace ViewsSourceGenerator
             var info = new ViewModelGenerationInfo(
                 commonInfo.ViewModelClassName,
                 commonInfo.ViewModelNamespaceName,
-                commonInfo.MethodsToCall,
+                commonInfo.ViewModelMethodsToCall,
                 localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
@@ -340,6 +342,19 @@ namespace ViewsSourceGenerator
                 .ToArray();
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
             SubViewsCollectionInfo[] subViewsCollectionInfos = GetSubViewsCollectionInfos(viewTypeSymbol);
+            var viewButtonCallInfos = commonInfo.ViewModelMethodsToCall
+                .Select(
+                    item => new ViewButtonMethodCallInfo
+                    {
+                        MethodToCall = item.MethodToCall,
+                        ButtonFieldName = item.ButtonFieldName,
+                        InactivePeriodMs = item.InactivePeriodMs,
+                        ShouldCheckForNull = item.ShouldCheckForNull,
+                        IsViewModelMethod = true,
+                        ShouldPassModel = false,
+                    })
+                .Concat(commonInfo.ViewMethodsToCall)
+                .ToArray();
 
             var requiredUsings = new[] { "System", "UniRx", "Tools", "UnityEngine", "ViewModelGeneration" };
             var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
@@ -348,7 +363,7 @@ namespace ViewsSourceGenerator
                 viewClassName,
                 commonInfo.ViewModelClassName,
                 viewNamespaceName,
-                commonInfo.MethodsToCall,
+                viewButtonCallInfos,
                 localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
@@ -620,9 +635,9 @@ namespace ViewsSourceGenerator
             return result;
         }
 
-        private ButtonMethodCallInfo[] GetButtonMethodCallInfo(INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol? viewModelTypeSymbol)
+        private ViewModelButtonMethodCallInfo[] GetViewModelButtonMethodCallInfo(INamedTypeSymbol viewTypeSymbol, INamedTypeSymbol? viewModelTypeSymbol)
         {
-            ButtonMethodCallInfo[] result = viewTypeSymbol
+            ViewModelButtonMethodCallInfo[] result = viewTypeSymbol
                 .GetMembers()
                 .OfType<IFieldSymbol>()
                 .SelectWhere((fieldSymbol, viewModel) =>
@@ -674,7 +689,7 @@ namespace ViewsSourceGenerator
                     
                     var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
                     
-                    return (true, new ButtonMethodCallInfo
+                    return (true, new ViewModelButtonMethodCallInfo
                         {
                             ButtonFieldName = fieldName,
                             MethodToCall = methodToCallName,
@@ -684,6 +699,60 @@ namespace ViewsSourceGenerator
                             InactivePeriodMs = clickCooldown,
                         });
                 }, viewModelTypeSymbol)
+                .ToArray();
+            
+            return result;
+        }
+        
+        private ViewButtonMethodCallInfo[] GetViewButtonMethodCallInfo(INamedTypeSymbol viewTypeSymbol)
+        {
+            ViewButtonMethodCallInfo[] result = viewTypeSymbol
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .SelectWhere(fieldSymbol =>
+                {
+                    var attributeName = ViewMethodCallAttributeTemplate.AttributeName;
+                    var attributeData = GetSingleAttributeData(attributeName, fieldSymbol);
+
+                    if (attributeData == null)
+                    {
+                        return (false, default);
+                    }
+
+                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
+                    {
+                        return (false, default);
+                    }
+                    
+                    if (ctorArgs[0].Value is not string methodToCallName)
+                    {
+                        return (false, default);
+                    }
+                    
+                    var fieldName = fieldSymbol.Name;
+
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewMethodCallAttributeTemplate.ClickCooldownMsParameterName, out int clickCooldown))
+                    {
+                        clickCooldown = 0;
+                    }
+                    
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewMethodCallAttributeTemplate.PassModelParameterName, out bool passModel))
+                    {
+                        passModel = false;
+                    }
+                    
+                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
+                    
+                    return (true, new ViewButtonMethodCallInfo
+                        {
+                            ButtonFieldName = fieldName,
+                            MethodToCall = methodToCallName,
+                            ShouldCheckForNull = shouldCheckForNull,
+                            InactivePeriodMs = clickCooldown,
+                            ShouldPassModel = passModel,
+                            IsViewModelMethod = false,
+                        });
+                })
                 .ToArray();
             
             return result;

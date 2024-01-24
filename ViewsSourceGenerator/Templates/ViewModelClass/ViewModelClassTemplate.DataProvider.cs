@@ -10,7 +10,7 @@ namespace ViewsSourceGenerator
         
         private string[] Usings { get; }
 
-        private ButtonMethodCallInfo[] ButtonMethodCallInfos { get; }
+        private ViewModelButtonMethodCallInfo[] ButtonMethodCallInfos { get; }
 
         private ViewModelLocalizationInfo[] LocalizationInfos { get; }
 
@@ -29,7 +29,7 @@ namespace ViewsSourceGenerator
         internal ViewModelClassTemplate(
             string className,
             string namespaceName,
-            ButtonMethodCallInfo[] buttonMethodCallInfos,
+            ViewModelButtonMethodCallInfo[] buttonMethodCallInfos,
             ViewModelLocalizationInfo[] localizationInfos,
             AutoCreationInfo[] autoCreationInfos,
             string[] usings,
