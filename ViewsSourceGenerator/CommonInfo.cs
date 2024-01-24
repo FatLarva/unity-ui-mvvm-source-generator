@@ -8,7 +8,8 @@ namespace ViewsSourceGenerator
         public readonly string ViewModelNamespaceName;
         public readonly INamedTypeSymbol ViewTypeSymbol;
         public readonly INamedTypeSymbol? ViewModelTypeSymbol;
-        public readonly ButtonMethodCallInfo[] MethodsToCall;
+        public readonly ViewModelButtonMethodCallInfo[] ViewModelMethodsToCall;
+        public readonly ViewButtonMethodCallInfo[] ViewMethodsToCall;
         public readonly LocalizableFieldInfo[] LocalizationFieldInfos;
         public readonly LocalizableFieldInfo[] KeyFromFieldLocalizationFieldInfos;
         public readonly SubscribeOnObservableInfo[] MethodForAutoSubscription;
@@ -22,7 +23,8 @@ namespace ViewsSourceGenerator
             string viewModelNamespaceName,
             INamedTypeSymbol viewTypeSymbol,
             INamedTypeSymbol? viewModelTypeSymbol,
-            ButtonMethodCallInfo[] methodsToCall,
+            ViewModelButtonMethodCallInfo[] viewModelMethodsToCall,
+            ViewButtonMethodCallInfo[] viewMethodsToCall,
             LocalizableFieldInfo[] localizationFieldInfos,
             LocalizableFieldInfo[] keyFromFieldLocalizationFieldInfos,
             SubscribeOnObservableInfo[] methodForAutoSubscription,
@@ -33,7 +35,8 @@ namespace ViewsSourceGenerator
             ViewModelNamespaceName = viewModelNamespaceName;
             ViewTypeSymbol = viewTypeSymbol;
             ViewModelTypeSymbol = viewModelTypeSymbol;
-            MethodsToCall = methodsToCall;
+            ViewMethodsToCall = viewMethodsToCall;
+            ViewModelMethodsToCall = viewModelMethodsToCall;
             LocalizationFieldInfos = localizationFieldInfos;
             KeyFromFieldLocalizationFieldInfos = keyFromFieldLocalizationFieldInfos;
             MethodForAutoSubscription = methodForAutoSubscription;

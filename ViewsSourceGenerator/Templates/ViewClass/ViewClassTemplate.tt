@@ -79,27 +79,14 @@ namespace <#= NamespaceName #>
 
 <#  } #>
 <#	foreach (var info in ButtonMethodCallInfo) { #>
-<#		if (info.ShouldCheckForNull) { #>
-			if (<#=info.ButtonFieldName#> != null)
-			{
-				<#= info.ButtonFieldName #>.OnClickAsObservable()
-<#			if (info.InactivePeriodMs > 0) { #>
-					.Where(_ => (Time.realtimeSinceStartup - <#= info.LastClickFieldName #>) * 1000 > <#= info.InactivePeriodMs #>)
-					.Do(_ => <#= info.LastClickFieldName #> = Time.realtimeSinceStartup)
-<#          } #>
-					.Subscribe(_ => model.<#= info.MethodToCall #>())
-					.AddTo(_oneInitDisposable);
-			}
-<#      } else { #>
-			<#= info.ButtonFieldName #>.OnClickAsObservable()
+			<#= info.ButtonReference #>
+				.OnClickAsObservable()
 <#			if (info.InactivePeriodMs > 0) { #>
 				.Where(_ => (Time.realtimeSinceStartup - <#= info.LastClickFieldName #>) * 1000 > <#= info.InactivePeriodMs #>)
 				.Do(_ => <#= info.LastClickFieldName #> = Time.realtimeSinceStartup)
 <#          } #>
-				.Subscribe(_ => model.<#= info.MethodToCall #>())
+				.Subscribe(_ => <#= info.CallMethodExpression #>)
 				.AddTo(_oneInitDisposable);
-<#      } #>
-			
 <# } #>
         
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>

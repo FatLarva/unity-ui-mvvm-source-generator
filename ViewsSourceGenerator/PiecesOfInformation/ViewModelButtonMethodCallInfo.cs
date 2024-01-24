@@ -3,7 +3,7 @@ using ViewsSourceGenerator.Tools;
 
 namespace ViewsSourceGenerator
 {
-    internal readonly struct ButtonMethodCallInfo
+    internal readonly struct ViewModelButtonMethodCallInfo
     {
         // Used by view-generation template only
         public string ButtonFieldName { get; init; }
@@ -22,7 +22,6 @@ namespace ViewsSourceGenerator
         public bool HasObservablesToDispose => HasPrivateCreations;
         
         public bool HasPassForwardCommands => !AutoCreationInfo.IsEmpty;
-        public string LastClickFieldName => $"{ButtonFieldName.Decapitalize().Camel()}LastClickTime";
 
         public string GetAutoCreatedObserversPrivatePart() => AutoCreationInfo.GetAutoCreatedObserversPrivatePart();
 
@@ -32,12 +31,12 @@ namespace ViewsSourceGenerator
         
         public string GetCallingCommandPart() => AutoCreationInfo.GetCallingCommandPart();
         
-        public bool IsEqualFromViewModelPoV(ButtonMethodCallInfo otherLocalizationInfo)
+        public bool IsEqualFromViewModelPoV(ViewModelButtonMethodCallInfo otherLocalizationInfo)
         {
-            return ButtonMethodCallInfo.AreEqualFromViewModelPoV(this, otherLocalizationInfo);
+            return ViewModelButtonMethodCallInfo.AreEqualFromViewModelPoV(this, otherLocalizationInfo);
         }
 
-        public static bool AreEqualFromViewModelPoV(ButtonMethodCallInfo a, ButtonMethodCallInfo b)
+        public static bool AreEqualFromViewModelPoV(ViewModelButtonMethodCallInfo a, ViewModelButtonMethodCallInfo b)
         {
             var areEqual = a.ShouldGenerateMethodWithPartialStuff == b.ShouldGenerateMethodWithPartialStuff;
             areEqual &= string.Equals(a.MethodToCall, b.MethodToCall, StringComparison.Ordinal);
