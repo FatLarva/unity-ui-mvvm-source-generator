@@ -904,6 +904,11 @@ namespace ViewsSourceGenerator
                             return (false, default);
                         }
 
+                        if (!IsExpressionBodiedProperty(propertySymbol))
+                        {
+                            return (false, default);
+                        }
+
                         ITypeSymbol observableGenericType = propertyType.TypeArguments[0];
                         
                         if (!CheckPropertyTypeValidity(propertyType, observableGenericType, ctx.Compilation, out string genericTypeName))
@@ -944,6 +949,17 @@ namespace ViewsSourceGenerator
             }
             
             return Array.Empty<ModelObservableInfo>();
+        }
+
+        private static bool IsExpressionBodiedProperty(IPropertySymbol propertySymbol)
+        {
+            var propertyDeclarationSyntax = propertySymbol
+                .DeclaringSyntaxReferences
+                .Select(reference => reference.GetSyntax())
+                .OfType<PropertyDeclarationSyntax>()
+                .FirstOrDefault();
+            
+            return propertyDeclarationSyntax?.ExpressionBody != null;
         }
 
         private static bool CheckPropertyTypeValidity(INamedTypeSymbol propertyType, ITypeSymbol observableGenericType, Compilation compilation, out string name)
