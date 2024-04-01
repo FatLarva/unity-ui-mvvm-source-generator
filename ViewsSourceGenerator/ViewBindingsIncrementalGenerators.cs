@@ -26,6 +26,7 @@ namespace ViewsSourceGenerator
                     pIContext.AddSource(SubViewsCollectionAttributeTemplate.SourceFileName, new SubViewsCollectionAttributeTemplate().TransformText());
                     pIContext.AddSource(ViewMethodCallAttributeTemplate.SourceFileName, new ViewMethodCallAttributeTemplate().TransformText());
                     pIContext.AddSource(MonoBehaviourExtTemplate.SourceFileName, new MonoBehaviourExtTemplate().TransformText());
+                    pIContext.AddSource(ButtonClickTypeEnumTemplate.SourceFileName, new ButtonClickTypeEnumTemplate().TransformText());
                 });
         }
     }
