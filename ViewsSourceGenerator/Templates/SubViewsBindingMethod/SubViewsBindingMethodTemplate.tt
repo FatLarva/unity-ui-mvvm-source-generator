@@ -17,7 +17,7 @@
 #>
 namespace <#=StaticConstants.AttributesNamespace#>
 {
-    internal enum SubViewsBindingMethod
+    internal enum <#= EnumName #>
     {
 <# foreach(var enumName in subViewsBindingMethodValues) {#>
         <#= enumName #>,

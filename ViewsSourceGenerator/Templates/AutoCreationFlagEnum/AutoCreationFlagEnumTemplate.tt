@@ -20,7 +20,7 @@ using System;
 namespace <#=StaticConstants.AttributesNamespace#>
 {
     [Flags]
-    internal enum AutoCreationFlag
+    internal enum <#= EnumName #>
     {
 <# for(var i = 0; i < autoCreationFlagValues.Length; i++) {#>
 <#     var enumName = autoCreationFlagValues[i]; #>
