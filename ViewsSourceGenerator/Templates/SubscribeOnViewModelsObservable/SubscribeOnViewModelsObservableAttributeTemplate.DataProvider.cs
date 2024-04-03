@@ -7,6 +7,7 @@
         public const string MetaDataName = StaticConstants.AttributesNamespace + "." + AttributeName;
 
         public const string FilterParameterName = "Filter";
+        public const string AutoCreationFlagParameterName = "AutoCreationFlag";
 
         public SubscribeOnViewModelsObservableAttributeTemplate()
         {

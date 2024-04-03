@@ -23,8 +23,11 @@ namespace <#= NamespaceName #>
     public partial class <#= ClassName #>
     {
 <#	foreach (var info in ButtonMethodCallInfo) { #>
-<#		if (info.InactivePeriodMs > 0) { #>
-		private float <#= info.LastClickFieldName #>;
+<#		for (var i = 0; i < info.CallInfos.Length; i++) { #>
+<#			var callInfo = info.CallInfos[i]; #>
+<#			if (callInfo.InactivePeriodMs > 0) { #>
+		private float <#= info.GetLastClickFieldName(i) #>;
+<#          } #>
 <#      } #>
 <# } #>
 
@@ -79,14 +82,10 @@ namespace <#= NamespaceName #>
 
 <#  } #>
 <#	foreach (var info in ButtonMethodCallInfo) { #>
-			<#= info.ButtonReference #>
-				.OnClickAsObservable()
-<#			if (info.InactivePeriodMs > 0) { #>
-				.Where(_ => (Time.realtimeSinceStartup - <#= info.LastClickFieldName #>) * 1000 > <#= info.InactivePeriodMs #>)
-				.Do(_ => <#= info.LastClickFieldName #> = Time.realtimeSinceStartup)
-<#          } #>
-				.Subscribe(_ => <#= info.CallMethodExpression #>)
-				.AddTo(_oneInitDisposable);
+
+<#		foreach (var statement in info.GetSubscribing()) { #>
+			<#= statement #>
+<#      } #>
 <# } #>
         
 <#	foreach (var localizableFieldInfo in LocalizationFieldInfos) { #>

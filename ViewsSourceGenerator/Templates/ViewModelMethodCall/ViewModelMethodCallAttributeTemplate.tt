@@ -19,12 +19,14 @@ using System;
 
 namespace <#= ns #>
 {
-    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
     internal class ViewModelMethodCallAttribute : Attribute
     {
         public string MethodName { get; }
         public string? <#= PassForwardThroughCommandNameParameterName #> { get; set; }
         public int <#= ClickCooldownMsParameterName #> { get; set; }
+        public <#= nameof(ButtonClickType) #> <#= InteractionTypeParameterName #> { get; set; }
+        public int <#= LongClickDurationMsParameterName #> { get; set; }
 
         public ViewModelMethodCallAttribute(string methodName)
         {

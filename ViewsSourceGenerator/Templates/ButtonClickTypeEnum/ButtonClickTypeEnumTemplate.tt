@@ -12,21 +12,15 @@
 // ------------------------------------------------------------------------------
 #nullable enable
 
-using System;
-
-<# var ns = StaticConstants.AttributesNamespace; #>
-namespace <#=ns#>
+<#
+    var bindingTypeValues = Enum.GetNames(typeof(ButtonClickType));
+#>
+namespace <#=StaticConstants.AttributesNamespace#>
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    internal class SubscribeOnViewModelsObservableAttribute : Attribute
+    internal enum <#= EnumName #>
     {
-        public string ObservableName;
-        public <#= nameof(AutoCreationFlag) #> <#= AutoCreationFlagParameterName #> { get; set; }
-        public string? <#= FilterParameterName #> { get; set; }
-
-        public SubscribeOnViewModelsObservableAttribute(string observableName)
-        {
-            ObservableName = observableName;
-        }
+<# foreach(var enumName in bindingTypeValues) {#>
+        <#= enumName #>,
+<# } #>
     }
 }

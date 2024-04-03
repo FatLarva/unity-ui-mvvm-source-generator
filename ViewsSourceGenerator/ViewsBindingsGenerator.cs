@@ -140,19 +140,22 @@ namespace ViewsSourceGenerator
 
         private void ProcessView(in GeneratorExecutionContext context, INamedTypeSymbol viewTypeSymbol, Dictionary<string, ViewModelGenerationInfo> allViewModelInfos)
         {
-            var attribute = GetSingleAttributeData(ViewModelGenerateAttributeTemplate.AttributeName, viewTypeSymbol);
+            if (!TryGetSingleAttributeData(ViewModelGenerateAttributeTemplate.AttributeName, viewTypeSymbol, out var attribute))
+            {
+                return;
+            }
             
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelClassNameParamName, out string? viewModelClassName))
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelClassNameParamName, out string? viewModelClassName, default))
             {
                 viewModelClassName = viewTypeSymbol.Name + "Model";
             }
             
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelNamespaceNameParamName, out string? viewModelNamespaceName))
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, ViewModelGenerateAttributeTemplate.ViewModelNamespaceNameParamName, out string? viewModelNamespaceName, default))
             {
                 viewModelNamespaceName = viewTypeSymbol.GetFullNamespace();
             }
 
-            if (!TryGetNamedArgumentValue(attribute?.NamedArguments, ViewModelGenerateAttributeTemplate.SkipViewModelGenerationParamName, out bool skipViewModelGeneration))
+            if (!TryGetNamedArgumentValue(attribute.NamedArguments, ViewModelGenerateAttributeTemplate.SkipViewModelGenerationParamName, out bool skipViewModelGeneration, default))
             {
                 skipViewModelGeneration = false;
             }
@@ -249,11 +252,15 @@ namespace ViewsSourceGenerator
                                      : new[] { "System", "UniRx", "UnityEngine", "ViewModelGeneration" };
 
             var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
+            var viewModelInfos = commonInfo.ViewModelMethodsToCall
+                .SelectMany(o => o.ViewModelInfos)
+                .ToArray();
+            
             
             var info = new ViewModelGenerationInfo(
                 commonInfo.ViewModelClassName,
                 commonInfo.ViewModelNamespaceName,
-                commonInfo.ViewModelMethodsToCall,
+                viewModelInfos,
                 localizationInfos,
                 commonInfo.MethodForAutoSubscription,
                 commonInfo.ObservablesBindings,
@@ -285,7 +292,7 @@ namespace ViewsSourceGenerator
                 .FirstOrDefault();
 
             var isMemberObservable = memberSymbol != null && IsMemberObservable(memberSymbol);
-            var keyCanBeNull = memberSymbol != null && GetSingleAttributeData(CanBeNullAttributeName, memberSymbol) != null;
+            var keyCanBeNull = TryGetSingleAttributeData(CanBeNullAttributeName, memberSymbol, out _);
             
             return new ViewModelLocalizationInfo
             {
@@ -342,21 +349,28 @@ namespace ViewsSourceGenerator
                 .ToArray();
             SubViewInfo[] subViewInfos = GetSubViewInfos(viewTypeSymbol);
             SubViewsCollectionInfo[] subViewsCollectionInfos = GetSubViewsCollectionInfos(viewTypeSymbol);
-            var viewButtonCallInfos = commonInfo.ViewModelMethodsToCall
+            ViewButtonMethodCallInfo[] viewButtonCallInfos = commonInfo.ViewModelMethodsToCall
                 .Select(
                     item => new ViewButtonMethodCallInfo
                     {
-                        MethodToCall = item.MethodToCall,
                         ButtonFieldName = item.ButtonFieldName,
-                        InactivePeriodMs = item.InactivePeriodMs,
                         ShouldCheckForNull = item.ShouldCheckForNull,
-                        IsViewModelMethod = true,
-                        ShouldPassModel = false,
+                        CallInfos = item.ViewInfos.Select(
+                            info => new ViewButtonMethodCallInfo.MethodCallInfo
+                            {
+                                MethodToCall = info.MethodToCall,
+                                InactivePeriodMs = info.InactivePeriodMs,
+                                LongClickDurationMs = info.LongClickDurationMs,
+                                ButtonInteractionType = info.ButtonInteractionType,
+                                IsViewModelMethod = true,
+                                ShouldPassModel = false,
+                            }).ToArray(),
                     })
                 .Concat(commonInfo.ViewMethodsToCall)
                 .ToArray();
+            viewButtonCallInfos = MergeViewButtonMethodCallInfos(viewButtonCallInfos);
 
-            var requiredUsings = new[] { "System", "UniRx", "Tools", "UnityEngine", "ViewModelGeneration" };
+            var requiredUsings = new[] { "System", "UniRx", "UniRx.Triggers", "Tools", "UnityEngine", "ViewModelGeneration" };
             var usings = GetUsings(commonInfo.ViewModelTypeSymbol, requiredUsings, commonInfo.AdditionalUsings);
             
             var classTemplate = new ViewClassTemplate(
@@ -377,7 +391,34 @@ namespace ViewsSourceGenerator
             /*var diagnostic = Diagnostic.Create(GetDiagnostic($"So far so good: {viewClassName}  {viewNamespaceName}"), null);
             context.ReportDiagnostic(diagnostic);*/
         }
-        
+
+        private ViewButtonMethodCallInfo[] MergeViewButtonMethodCallInfos(ViewButtonMethodCallInfo[] viewButtonCallInfos)
+        {
+            var infosByButtonNames = new Dictionary<string, ViewButtonMethodCallInfo>(viewButtonCallInfos.Length, StringComparer.Ordinal);
+
+            foreach (var viewButtonCallInfo in viewButtonCallInfos)
+            {
+                if (!infosByButtonNames.TryGetValue(viewButtonCallInfo.ButtonFieldName, out var storedInfo))
+                {
+                    infosByButtonNames.Add(viewButtonCallInfo.ButtonFieldName, viewButtonCallInfo);
+                }
+                else
+                {
+                    infosByButtonNames[storedInfo.ButtonFieldName] = new ViewButtonMethodCallInfo
+                    {
+                        ButtonFieldName = storedInfo.ButtonFieldName,
+                        ShouldCheckForNull = storedInfo.ShouldCheckForNull,
+                        CallInfos = storedInfo.CallInfos
+                            .Concat(viewButtonCallInfo.CallInfos)
+                            .Distinct(ViewCallInfoComparer.Default)
+                            .ToArray(),
+                    };
+                }
+            }
+
+            return infosByButtonNames.Values.ToArray();
+        }
+
         private void GenerateModel(in GeneratorExecutionContext context, INamedTypeSymbol modelTypeSymbol)
         {
             var className = modelTypeSymbol.Name;
@@ -407,21 +448,20 @@ namespace ViewsSourceGenerator
                 .SelectWhere(field =>
                 {
                     const string attrName = SubViewAttributeTemplate.AttributeName;
-                    var attributeData = GetSingleAttributeData(attrName, field);
 
-                    if (attributeData == null)
+                    if (!TryGetSingleAttributeData(attrName, field, out var attributeData))
                     {
                         return (false, default);
                     }
                     
-                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
+                    var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, field, out _);
                     
-                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.UseSameViewModelParameterName, out bool useSameViewModel) && useSameViewModel)
+                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.UseSameViewModelParameterName, out bool useSameViewModel, false) && useSameViewModel)
                     {
                         return (true, new SubViewInfo { ViewFieldName = field.Name, UseSameViewModel = true, CheckForNull = shouldCheckForNull });
                     }
                                 
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.SubViewModelFieldNameParameterName, out string? viewModelFieldName))
+                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewAttributeTemplate.SubViewModelFieldNameParameterName, out string? viewModelFieldName, default))
                     {
                         viewModelFieldName = field.Type.Name + "Model";
                     }
@@ -441,31 +481,23 @@ namespace ViewsSourceGenerator
                 .SelectWhere(field =>
                 {
                     const string attrName = SubViewsCollectionAttributeTemplate.AttributeName;
-                    var attributeData = GetSingleAttributeData(attrName, field);
 
-                    if (attributeData == null)
-                    {
-                        return (false, default);
-                    }
-                    
-                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
-                    
-                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
-                    {
-                        return (false, default);
-                    }
-                
-                    if (ctorArgs[0].Value is not int bindingMethodObject)
+                    if (!TryGetSingleAttributeData(attrName, field, out var attributeData))
                     {
                         return (false, default);
                     }
 
+                    if (!TryGetConstructorArgument(attributeData, 0, out int bindingMethodObject))
+                    {
+                        return (false, default);
+                    }
+
+                    var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, field, out _);
                     var bindingMethod = (SubViewsBindingMethod)bindingMethodObject;
-                    
                     string? viewModelFieldName = string.Empty;
                     if (bindingMethod != SubViewsBindingMethod.SameModel)
                     {
-                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.SubViewModelFieldNameParameterName, out viewModelFieldName))
+                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.SubViewModelFieldNameParameterName, out viewModelFieldName, default))
                         {
                             return (false, default);
                         }
@@ -493,12 +525,12 @@ namespace ViewsSourceGenerator
                                            BindingMethod = SubViewsBindingMethod.Index,
                                        });
                         case SubViewsBindingMethod.FieldMatch:
-                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewBindingFieldNameParameterName, out string? viewMatchingFieldName))
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewBindingFieldNameParameterName, out string? viewMatchingFieldName, default))
                             {
                                 return (false, default);
                             }
                             
-                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewModelBindingFieldNameParameterName, out string? viewModelMatchingFieldName))
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.ViewModelBindingFieldNameParameterName, out string? viewModelMatchingFieldName, default))
                             {
                                 return (false, default);
                             }
@@ -515,7 +547,7 @@ namespace ViewsSourceGenerator
                                            ViewModelBindingFieldName = viewModelMatchingFieldName,
                                        });
                         case SubViewsBindingMethod.WithMethod:
-                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.MatchingMethodNameParameterName, out string? matchingMethodName))
+                            if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubViewsCollectionAttributeTemplate.MatchingMethodNameParameterName, out string? matchingMethodName, default))
                             {
                                 return (false, default);
                             }
@@ -556,33 +588,23 @@ namespace ViewsSourceGenerator
                 .OfType<IFieldSymbol>()
                 .SelectWhere((fieldSymbol, attrName, paramName, isField) =>
                 {
-                    var attributeData = GetSingleAttributeData(attrName, fieldSymbol);
-
-                    if (attributeData == null)
+                    if (!TryGetSingleAttributeData(attrName, fieldSymbol, out var attributeData))
                     {
                         return (false, default);
                     }
 
-                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
-                    {
-                        return (false, default);
-                    }
-                    
-                    if (ctorArgs[0].Value is not string { Length: > 0 } localizationKey)
+                    if (!TryGetConstructorArgument(attributeData, 0, out string? localizationKey))
                     {
                         return (false, default);
                     }
                     
                     var fieldName = fieldSymbol.Name;
-                    
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, paramName, out bool isLocalizePlaceholder))
-                    {
-                        isLocalizePlaceholder = false;
-                    }
+
+                    TryGetNamedArgumentValue(attributeData.NamedArguments, paramName, out bool isLocalizePlaceholder, false);
 
                     var finalLocalizationKey = isField ? localizationKey + "Meddler" : localizationKey;
                     var localizationKeyProvideFieldName = isField ? localizationKey : string.Empty;
-                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
+                    var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, fieldSymbol, out _);
 
                     return (true, new LocalizableFieldInfo
                                 {
@@ -643,60 +665,97 @@ namespace ViewsSourceGenerator
                 .SelectWhere((fieldSymbol, viewModel) =>
                 {
                     var attributeName = ViewModelMethodCallAttributeTemplate.AttributeName;
-                    var attributeData = GetSingleAttributeData(attributeName, fieldSymbol);
+                    var maybeAttributeDatas = GetMultipleAttributeData(attributeName, fieldSymbol);
 
-                    if (attributeData == null)
+                    if (maybeAttributeDatas is not { Length: > 0 } attributeDatas)
                     {
                         return (false, default);
                     }
 
-                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
-                    {
-                        return (false, default);
-                    }
-                    
-                    if (ctorArgs[0].Value is not string methodToCallName)
-                    {
-                        return (false, default);
-                    }
-                    
                     var fieldName = fieldSymbol.Name;
-                    bool shouldGenerateMethodWithPartialStuff;
+                    var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, fieldSymbol, out _);
 
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewModelMethodCallAttributeTemplate.ClickCooldownMsParameterName, out int clickCooldown))
-                    {
-                        clickCooldown = 0;
-                    }
-
-                    AutoCreationInfo autoCreationInfo;
-                    if (TryGetNamedArgumentValue(attributeData.NamedArguments, ViewModelMethodCallAttributeTemplate.PassForwardThroughCommandNameParameterName, out string? passThroughCommandName))
-                    {
-                        autoCreationInfo = new AutoCreationInfo(passThroughCommandName, AutoCreationFlag.WrappedCommand);
-                        shouldGenerateMethodWithPartialStuff = false;
-                    }
-                    else
-                    {
-                        autoCreationInfo = AutoCreationInfo.Empty;
-                        
-                        var handwrittenMethod = viewModel?
-                            .GetMembers()
-                            .OfType<IMethodSymbol>()
-                            .FirstOrDefault(method => method.Name == methodToCallName
-                                                      && method is { ReturnsVoid: true, DeclaredAccessibility: Accessibility.Public }
-                                                      && !IsPartialMethod(method));
-                        shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
-                    }
+                    var viewInfos = new ViewModelButtonMethodCallInfo.ViewInfo[attributeDatas.Length].AsSpan();
+                    var viewModelInfos = new ViewModelButtonMethodCallInfo.ViewModelInfo[attributeDatas.Length].AsSpan();
+                    var actualInfosCount = 0;
                     
-                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
+                    foreach (var attributeData in attributeDatas)
+                    {
+                        if (!TryGetConstructorArgument(attributeData, 0, out string? methodToCallName))
+                        {
+                            continue;
+                        }
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewModelMethodCallAttributeTemplate.ClickCooldownMsParameterName,
+                            out int clickCooldown,
+                            0);
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewModelMethodCallAttributeTemplate.InteractionTypeParameterName,
+                            out ButtonClickType buttonClickType,
+                            ButtonClickType.Click);
+                        
+                        TryGetNamedArgumentValue(
+                                attributeData.NamedArguments,
+                                ViewModelMethodCallAttributeTemplate.LongClickDurationMsParameterName,
+                                out int longClickDurationMs,
+                                1500);
+
+                        bool shouldGenerateMethodWithPartialStuff;
+                        AutoCreationInfo autoCreationInfo;
+                        if (TryGetNamedArgumentValue(
+                                attributeData.NamedArguments,
+                                ViewModelMethodCallAttributeTemplate.PassForwardThroughCommandNameParameterName,
+                                out string? passThroughCommandName,
+                                default))
+                        {
+                            autoCreationInfo = new AutoCreationInfo(passThroughCommandName, AutoCreationFlag.WrappedCommand);
+                            shouldGenerateMethodWithPartialStuff = false;
+                        }
+                        else
+                        {
+                            autoCreationInfo = AutoCreationInfo.Empty;
+
+                            var handwrittenMethod = viewModel?
+                                .GetMembers()
+                                .OfType<IMethodSymbol>()
+                                .FirstOrDefault(
+                                    method => method.Name == methodToCallName
+                                           && method is { ReturnsVoid: true, DeclaredAccessibility: Accessibility.Public }
+                                           && !IsPartialMethod(method));
+                            shouldGenerateMethodWithPartialStuff = handwrittenMethod == null;
+                        }
+
+                        viewInfos[actualInfosCount] = new ViewModelButtonMethodCallInfo.ViewInfo
+                        {
+                            MethodToCall = methodToCallName,
+                            InactivePeriodMs = clickCooldown,
+                            ButtonInteractionType = buttonClickType,
+                            LongClickDurationMs = longClickDurationMs,
+                        };
+
+                        viewModelInfos[actualInfosCount] = new ViewModelButtonMethodCallInfo.ViewModelInfo
+                        {
+                            MethodToCall = methodToCallName,
+                            ShouldGenerateMethodWithPartialStuff = shouldGenerateMethodWithPartialStuff,
+                            AutoCreationInfo = autoCreationInfo,
+                        };
+                        
+                        actualInfosCount++;
+                    }
+
+                    viewInfos = viewInfos.Slice(0, actualInfosCount);
+                    viewModelInfos = viewModelInfos.Slice(0, actualInfosCount);
                     
                     return (true, new ViewModelButtonMethodCallInfo
                         {
                             ButtonFieldName = fieldName,
-                            MethodToCall = methodToCallName,
-                            ShouldGenerateMethodWithPartialStuff = shouldGenerateMethodWithPartialStuff,
                             ShouldCheckForNull = shouldCheckForNull,
-                            AutoCreationInfo = autoCreationInfo,
-                            InactivePeriodMs = clickCooldown,
+                            ViewInfos = viewInfos.ToArray(),
+                            ViewModelInfos = viewModelInfos.ToArray(),
                         });
                 }, viewModelTypeSymbol)
                 .ToArray();
@@ -711,83 +770,106 @@ namespace ViewsSourceGenerator
                 .OfType<IFieldSymbol>()
                 .SelectWhere(fieldSymbol =>
                 {
-                    var attributeName = ViewMethodCallAttributeTemplate.AttributeName;
-                    var attributeData = GetSingleAttributeData(attributeName, fieldSymbol);
+                    var maybeAttributeDatas = GetMultipleAttributeData(ViewMethodCallAttributeTemplate.AttributeName, fieldSymbol);
 
-                    if (attributeData == null)
+                    if (maybeAttributeDatas is not { Length: > 0 } attributeDatas)
                     {
                         return (false, default);
                     }
 
-                    if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
-                    {
-                        return (false, default);
-                    }
-                    
-                    if (ctorArgs[0].Value is not string methodToCallName)
-                    {
-                        return (false, default);
-                    }
-                    
                     var fieldName = fieldSymbol.Name;
-
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewMethodCallAttributeTemplate.ClickCooldownMsParameterName, out int clickCooldown))
+                    var callInfos = new ViewButtonMethodCallInfo.MethodCallInfo[attributeDatas.Length];
+                    var actualCallInfosCount = 0;
+                    foreach (var attributeData in attributeDatas)
                     {
-                        clickCooldown = 0;
-                    }
-                    
-                    if (!TryGetNamedArgumentValue(attributeData.NamedArguments, ViewMethodCallAttributeTemplate.PassModelParameterName, out bool passModel))
-                    {
-                        passModel = false;
-                    }
-                    
-                    var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, fieldSymbol) != null;
-                    
-                    return (true, new ViewButtonMethodCallInfo
+                        if (!TryGetConstructorArgument(attributeData, 0, out string? methodToCallName))
                         {
-                            ButtonFieldName = fieldName,
+                            continue;
+                        }
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewMethodCallAttributeTemplate.ClickCooldownMsParameterName,
+                            out int clickCooldown,
+                            0);
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewMethodCallAttributeTemplate.PassModelParameterName,
+                            out bool passModel,
+                            false);
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewMethodCallAttributeTemplate.InteractionTypeParameterName,
+                            out ButtonClickType buttonClickType,
+                            ButtonClickType.Click);
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            ViewModelMethodCallAttributeTemplate.LongClickDurationMsParameterName,
+                            out int longClickDurationMs,
+                            1500);
+
+                        callInfos[actualCallInfosCount++] = new ViewButtonMethodCallInfo.MethodCallInfo
+                        {
                             MethodToCall = methodToCallName,
-                            ShouldCheckForNull = shouldCheckForNull,
                             InactivePeriodMs = clickCooldown,
+                            LongClickDurationMs = longClickDurationMs,
                             ShouldPassModel = passModel,
+                            ButtonInteractionType = buttonClickType,
                             IsViewModelMethod = false,
-                        });
+                        };
+                    }
+
+                    callInfos = callInfos.AsSpan(0, actualCallInfosCount).ToArray();
+                    var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, fieldSymbol, out _);
+
+                    return (true, new ViewButtonMethodCallInfo
+                               {
+                                   ButtonFieldName = fieldName,
+                                   ShouldCheckForNull = shouldCheckForNull,
+                                   CallInfos = callInfos,
+                               });
                 })
                 .ToArray();
             
             return result;
         }
 
-        private static AttributeData? GetSingleAttributeData(string attributeName, ISymbol fieldSymbol)
+        private static bool TryGetSingleAttributeData(string attributeName, ISymbol? fieldSymbol, [NotNullWhen(true)] out AttributeData? attributeData)
         {
             bool IsValidAttributeName(AttributeData? ad) => string.Equals(ad?.AttributeClass?.Name, attributeName, StringComparison.Ordinal);
 
             try
             {
-                AttributeData? attributeData = fieldSymbol
+                attributeData = fieldSymbol?
                     .GetAttributes()
                     .SingleOrDefault(IsValidAttributeName);
 
-                return attributeData;
+                return attributeData != null;
             }
             catch (Exception)
             {
-                return null;
+                // Suppress everything here.
             }
+
+            attributeData = default;
+            return false;
         }
         
-        private static AttributeData[] GetMultipleAttributeData(string attributeName, ISymbol fieldSymbol)
+        private static AttributeData[] GetMultipleAttributeData(string attributeName, ISymbol? fieldSymbol)
         {
             bool IsValidAttributeName(AttributeData? ad) => string.Equals(ad?.AttributeClass?.Name, attributeName, StringComparison.Ordinal);
 
             try
             {
-                AttributeData[] attributeData = fieldSymbol
+                AttributeData[]? attributeData = fieldSymbol?
                     .GetAttributes()
                     .Where(IsValidAttributeName)
                     .ToArray();
                 
-                return attributeData;
+                return attributeData ?? Array.Empty<AttributeData>();
             }
             catch (Exception)
             {
@@ -805,32 +887,27 @@ namespace ViewsSourceGenerator
                     .SelectWhere(methodSymbol =>
                     {
                         var attributeName = SubscribeOnViewModelsObservableAttributeTemplate.AttributeName;
-                        var attributeData = GetSingleAttributeData(attributeName, methodSymbol);
-
-                        if (attributeData == null)
+                        if (!TryGetSingleAttributeData(attributeName, methodSymbol, out var attributeData))
                         {
                             return (false, default);
                         }
 
-                        if (attributeData.ConstructorArguments is not { Length: >= 1 } ctorArgs)
-                        {
-                            return (false, default);
-                        }
-                        
-                        if (ctorArgs[0].Value is not string observableName)
+                        if (!TryGetConstructorArgument(attributeData, 0, out string? observableName))
                         {
                             return (false, default);
                         }
 
-                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
-                        {
-                            creationFlags = AutoCreationFlag.None;
-                        }
-                        
-                        if (!TryGetNamedArgumentValue(attributeData.NamedArguments, SubscribeOnViewModelsObservableAttributeTemplate.FilterParameterName, out string? filter))
-                        {
-                            filter = null;
-                        }
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            SubscribeOnViewModelsObservableAttributeTemplate.AutoCreationFlagParameterName,
+                            out AutoCreationFlag creationFlags,
+                            AutoCreationFlag.None);
+
+                        TryGetNamedArgumentValue(
+                            attributeData.NamedArguments,
+                            SubscribeOnViewModelsObservableAttributeTemplate.FilterParameterName,
+                            out string? filter,
+                            null);
 
                         var methodName = methodSymbol.Name;
                         var methodArgumentType = methodSymbol.Parameters.Any() ? methodSymbol.Parameters[0].Type : null;
@@ -977,11 +1054,15 @@ namespace ViewsSourceGenerator
             return isValid;
         }
 
-        private static bool TryGetNamedArgumentValue<T>(ImmutableArray<KeyValuePair<string, TypedConstant>>? namedArguments, string argumentName, [NotNullWhen(true)] out T? argumentValue)
+        private static bool TryGetNamedArgumentValue<T>(
+            ImmutableArray<KeyValuePair<string, TypedConstant>>? namedArguments,
+            string argumentName,
+            [NotNullWhen(true)] out T? argumentValue,
+            T? defaultValue)
         {
-            if (!namedArguments.HasValue)
+            if (!namedArguments.HasValue || string.IsNullOrEmpty(argumentName))
             {
-                argumentValue = default;
+                argumentValue = defaultValue;
                 return false;
             }
             
@@ -1002,8 +1083,30 @@ namespace ViewsSourceGenerator
                 return true;
             }
             
-            argumentValue = default;
+            argumentValue = defaultValue;
             return false;
+        }
+        
+        private static bool TryGetConstructorArgument<T>(
+            AttributeData? attributeData,
+            int argumentIndex,
+            [NotNullWhen(true)] out T? argumentValue,
+            T? defaultValue = default)
+        {
+            if (attributeData?.ConstructorArguments is not { Length: >= 0 } ctorArgs || ctorArgs.Length <= argumentIndex)
+            {
+                argumentValue = defaultValue;
+                return false;
+            }
+
+            if (ctorArgs[argumentIndex].Value is not T argument)
+            {
+                argumentValue = defaultValue;
+                return false;
+            }
+
+            argumentValue = argument;
+            return true;
         }
 
         private ObservableBindingInfo[] GetObservablesBindingsInfos(INamedTypeSymbol typeSymbol)
@@ -1031,41 +1134,34 @@ namespace ViewsSourceGenerator
 
             (bool include, ObservableBindingInfo result) GatherBindingInfo(AttributeData attribute, IFieldSymbol field)
             {
-                ObservableBindingDelaySettings? delaySettings;
+                ObservableBindingDelaySettings? delaySettings = null;
                 if (TryGetNamedArgumentValue(
                         attribute.NamedArguments,
                         BindToObservableAttributeTemplate.DelaySecondsParamName,
-                        out int delaySeconds))
+                        out int delaySeconds,
+                        default))
                 {
                     delaySettings = new ObservableBindingDelaySettings(false, delaySeconds);
                 }
                 else if (TryGetNamedArgumentValue(
                              attribute.NamedArguments,
                              BindToObservableAttributeTemplate.DelayFramesParamName,
-                             out int delayFrames))
+                             out int delayFrames,
+                             default))
                 {
                     delaySettings = new ObservableBindingDelaySettings(true, delayFrames);
                 }
-                else
-                {
-                    delaySettings = null;
-                }
 
-                if (attribute.ConstructorArguments is not { Length: >= 2 } ctorArgs)
+                if (!TryGetConstructorArgument(attribute, 0, out string? observableName))
                 {
                     return (false, default);
                 }
                 
-                if (ctorArgs[0].Value is not string { Length: > 0 } observableName)
+                if (!TryGetConstructorArgument(attribute, 1, out int bindingTypeObject))
                 {
                     return (false, default);
                 }
-                            
-                if (ctorArgs[1].Value is not int bindingTypeObject)
-                {
-                    return (false, default);
-                }
-
+                
                 var bindingType = (BindingType)bindingTypeObject;
                             
                 var isNegated = false;
@@ -1075,12 +1171,13 @@ namespace ViewsSourceGenerator
                     observableName = observableName.Substring(1);
                     isNegated = true;
                 }
-                            
-                if (!TryGetNamedArgumentValue(attribute.NamedArguments, AutoCreationFlagEnumTemplate.EnumName, out AutoCreationFlag creationFlags))
-                {
-                    creationFlags = AutoCreationFlag.None;
-                }
 
+                TryGetNamedArgumentValue(
+                    attribute.NamedArguments,
+                    AutoCreationFlagEnumTemplate.EnumName,
+                    out AutoCreationFlag creationFlags,
+                    AutoCreationFlag.None);
+                
                 AutoCreationInfo autoCreationInfo;
                 if (creationFlags != AutoCreationFlag.None)
                 {
@@ -1093,7 +1190,7 @@ namespace ViewsSourceGenerator
                 }
                             
                 var isCollection = CheckFieldIsCollection(field);
-                var shouldCheckForNull = GetSingleAttributeData(CanBeNullAttributeName, field) != null;
+                var shouldCheckForNull = TryGetSingleAttributeData(CanBeNullAttributeName, field, out _);
                 
                 return (true, new ObservableBindingInfo(field.Name, bindingType, isNegated, isCollection, shouldCheckForNull, delaySettings, autoCreationInfo));
             }
