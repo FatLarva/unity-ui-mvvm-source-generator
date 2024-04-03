@@ -2,16 +2,16 @@
 
 namespace ViewsSourceGenerator.Comparers
 {
-    internal class ButtonMethodCallInfoComparerFromViewModelPoV : IEqualityComparer<ViewModelButtonMethodCallInfo>
+    internal class ButtonMethodCallInfoComparerFromViewModelPoV : IEqualityComparer<ViewModelButtonMethodCallInfo.ViewModelInfo>
     {
         public static readonly ButtonMethodCallInfoComparerFromViewModelPoV Default = new();
         
-        public bool Equals(ViewModelButtonMethodCallInfo x, ViewModelButtonMethodCallInfo y)
+        public bool Equals(ViewModelButtonMethodCallInfo.ViewModelInfo x, ViewModelButtonMethodCallInfo.ViewModelInfo y)
         {
-            return ViewModelButtonMethodCallInfo.AreEqualFromViewModelPoV(x, y);
+            return ViewModelButtonMethodCallInfo.ViewModelInfo.AreEqualFromViewModelPoV(x, y);
         }
 
-        public int GetHashCode(ViewModelButtonMethodCallInfo obj)
+        public int GetHashCode(ViewModelButtonMethodCallInfo.ViewModelInfo obj)
         {
             unchecked
             {

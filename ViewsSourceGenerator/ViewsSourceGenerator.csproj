@@ -112,6 +112,12 @@
       <Compile Update="Templates\MonoBehaviourExt\MonoBehaviourExtTemplate.cs">
         <DependentUpon>MonoBehaviourExtTemplate.tt</DependentUpon>
       </Compile>
+      <Compile Update="Templates\ButtonClickTypeEnum\ButtonClickTypeEnumTemplate.cs">
+        <DependentUpon>ButtonClickTypeEnumTemplate.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\LongTapKeeper\LongTapKeeperTemplate.cs">
+        <DependentUpon>LongTapKeeperTemplate.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -202,6 +208,14 @@
       <None Update="Templates\MonoBehaviourExt\MonoBehaviourExtTemplate.tt">
         <Generator>TextTemplatingFilePreprocessor</Generator>
         <LastGenOutput>MonoBehaviourExtTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\ButtonClickTypeEnum\ButtonClickTypeEnumTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ButtonClickTypeEnumTemplate.cs</LastGenOutput>
+      </None>
+      <None Update="Templates\LongTapKeeper\LongTapKeeperTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>LongTapKeeperTemplate.cs</LastGenOutput>
       </None>
     </ItemGroup>
 

@@ -7,7 +7,9 @@
         public const string MetaDataName = StaticConstants.AttributesNamespace + "." + AttributeName;
         
         public const string ClickCooldownMsParameterName = "ClickCooldownMs";
+        public const string LongClickDurationMsParameterName = "LongClickDurationMs";
         public const string PassForwardThroughCommandNameParameterName = "PassForwardThroughCommandName";
+        public const string InteractionTypeParameterName = "InteractionType";
 
         public ViewModelMethodCallAttributeTemplate()
         {
