@@ -25,6 +25,10 @@ namespace <#= NamespaceName #>
 	[GeneratedViewModel]
     public partial class <#= ClassName #> : IDisposable
     {
+<# if (NeedLocalization) { #>
+		private readonly ReactiveCommand _localizationChangedCmd = new();
+<# } #>
+
 <#	foreach (var subscribeInfo in CreationInfos) { #>
 <#		if (subscribeInfo.HasPrivateCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPrivatePart()#>
@@ -35,9 +39,11 @@ namespace <#= NamespaceName #>
 		<#=methodCallInfo.GetAutoCreatedObserversPrivatePart()#>
 <#		} #>
 <#  } #>
+
 <#	foreach (var localizableFieldInfo in LocalizationInfos) { #>
 		public readonly ReactiveProperty<string> <#=localizableFieldInfo.LocalizationKey.ToPascalCase()#> = new();
 <#  } #>
+
 <#	foreach (var subscribeInfo in CreationInfos) { #>
 <#		if (subscribeInfo.HasPublicCreations) { #>
 		<#=subscribeInfo.GetAutoCreatedObserversPublicPart()#>
@@ -48,6 +54,10 @@ namespace <#= NamespaceName #>
 		<#=methodCallInfo.GetAutoCreatedObserversPublicPart()#>
 <#		} #>
 <#  } #>
+
+<# if (NeedLocalization) { #>
+		public IObservable<Unit> LocalizationChangedCmd => _localizationChangedCmd;
+<# } #>
 		
 		private readonly CompositeDisposable _lifetimeDisposable = new();
 <# if (ShouldImplementDisposeInterface) { #>
@@ -118,6 +128,8 @@ namespace <#= NamespaceName #>
 				.Subscribe(_ => ApplyLocalization(localizationProvider))
 				.AddTo(compositeDisposable);
 
+			_localizationChangedCmd.AddTo(compositeDisposable);
+
 			ApplyLocalization(localizationProvider);
 		}
 
@@ -160,6 +172,8 @@ namespace <#= NamespaceName #>
 				Debug.LogError("Exception thrown during manual-localization.");
 				Debug.LogException(exception);
 			}
+
+			_localizationChangedCmd.Execute();
 		}
 
 		partial void ManualLocalization(ILocalizationProvider localizationProvider);
